@@ -1,113 +1,138 @@
 #!/usr/bin/env swift
-// Generates the app icon: a Dock shelf of app tiles above its mirror image.
+// Generates the app icon: a periodic-table style element tile in the same house
+// style as M3 Tracker and Desktop Bins Widget — atomic number "27", tipped 45° to
+// the left, the "Dm" symbol, and the name along the bottom, on purple.
 // Run with:
 //   swift Tools/generate_icon.swift
-// then rebuild the .icns with Tools/make_icns.sh.
 //
-// Draws into a fixed 1024px bitmap rather than NSImage.lockFocus, which
-// renders at 2x on a Retina display.
+// Produces two variants, because the name is an unreadable smudge at the 16
+// and 32 point sizes macOS uses in Finder lists and dialogs:
+//   Resources/AppIcon.png       — full tile, used from 128pt up
+//   Resources/AppIcon-small.png — no name, larger symbol, used at 16-64pt
 
 import AppKit
 
-let size = 1024
-let rep = NSBitmapImageRep(bitmapDataPlanes: nil, pixelsWide: size, pixelsHigh: size, bitsPerSample: 8,
-                           samplesPerPixel: 4, hasAlpha: true, isPlanar: false,
-                           colorSpaceName: .deviceRGB, bytesPerRow: 0, bitsPerPixel: 0)!
-NSGraphicsContext.saveGraphicsState()
-NSGraphicsContext.current = NSGraphicsContext(bitmapImageRep: rep)
-let ctx = NSGraphicsContext.current!.cgContext
-let canvas = CGFloat(size)
-let space = CGColorSpaceCreateDeviceRGB()
+func renderIcon(includeName: Bool) -> NSImage {
+let canvas: CGFloat = 1024
+let image = NSImage(size: NSSize(width: canvas, height: canvas))
 
-func rgb(_ r: CGFloat, _ g: CGFloat, _ b: CGFloat, _ a: CGFloat = 1) -> CGColor {
-    CGColor(colorSpace: space, components: [r, g, b, a])!
+image.lockFocus()
+guard let ctx = NSGraphicsContext.current?.cgContext else {
+    fatalError("no graphics context")
 }
 
-// MARK: - Tile
-
-let margin = canvas * 0.09
+// A small margin keeps the tile from looking oversized beside other Dock icons.
+let margin = canvas * 0.045
 let tile = CGRect(x: margin, y: margin, width: canvas - margin * 2, height: canvas - margin * 2)
-let tilePath = CGPath(roundedRect: tile, cornerWidth: tile.width * 0.225, cornerHeight: tile.width * 0.225, transform: nil)
+let side = tile.width
+let cornerRadius = side * 0.215
 
-ctx.saveGState()
-ctx.setShadow(offset: CGSize(width: 0, height: -canvas * 0.012), blur: canvas * 0.03, color: rgb(0, 0, 0, 0.35))
-ctx.addPath(tilePath)
-ctx.setFillColor(rgb(0.1, 0.1, 0.2))
-ctx.fillPath()
-ctx.restoreGState()
+let tilePath = CGPath(roundedRect: tile, cornerWidth: cornerRadius, cornerHeight: cornerRadius, transform: nil)
+
+// MARK: - Purple body
 
 ctx.saveGState()
 ctx.addPath(tilePath)
 ctx.clip()
-let body = CGGradient(colorsSpace: space, colors: [rgb(0.16, 0.20, 0.42), rgb(0.06, 0.08, 0.20)] as CFArray,
-                      locations: [0, 1])!
-ctx.drawLinearGradient(body, start: CGPoint(x: tile.midX, y: tile.maxY), end: CGPoint(x: tile.midX, y: tile.minY), options: [])
 
-// MARK: - Dock and reflection
+let colorSpace = CGColorSpaceCreateDeviceRGB()
+let bodyColors = [
+    NSColor(calibratedRed: 0.55, green: 0.27, blue: 0.82, alpha: 1.0).cgColor,
+    NSColor(calibratedRed: 0.29, green: 0.08, blue: 0.52, alpha: 1.0).cgColor,
+] as CFArray
+let bodyGradient = CGGradient(colorsSpace: colorSpace, colors: bodyColors, locations: [0.0, 1.0])!
+ctx.drawLinearGradient(
+    bodyGradient,
+    start: CGPoint(x: tile.minX, y: tile.maxY),
+    end: CGPoint(x: tile.maxX, y: tile.minY),
+    options: []
+)
 
-let horizon = tile.minY + tile.height * 0.47
-let shelfWidth = tile.width * 0.78
-let shelfHeight = tile.height * 0.20
-let shelf = CGRect(x: tile.midX - shelfWidth / 2, y: horizon + tile.height * 0.025, width: shelfWidth, height: shelfHeight)
+// Glossy sheen sweeping across the upper-left, as in the reference art.
+let gloss = CGMutablePath()
+gloss.move(to: CGPoint(x: tile.minX, y: tile.minY + side * 0.52))
+gloss.addCurve(
+    to: CGPoint(x: tile.minX + side * 0.68, y: tile.maxY),
+    control1: CGPoint(x: tile.minX + side * 0.30, y: tile.minY + side * 0.78),
+    control2: CGPoint(x: tile.minX + side * 0.34, y: tile.maxY)
+)
+gloss.addLine(to: CGPoint(x: tile.minX, y: tile.maxY))
+gloss.closeSubpath()
+ctx.addPath(gloss)
+ctx.setFillColor(NSColor.white.withAlphaComponent(0.10).cgColor)
+ctx.fillPath()
 
-let colors: [(CGColor, CGColor)] = [
-    (rgb(0.33, 0.78, 1.00), rgb(0.10, 0.48, 0.95)),
-    (rgb(0.45, 0.90, 0.45), rgb(0.12, 0.65, 0.30)),
-    (rgb(1.00, 0.78, 0.25), rgb(0.98, 0.52, 0.10)),
-    (rgb(1.00, 0.45, 0.50), rgb(0.88, 0.18, 0.35)),
-]
+ctx.restoreGState()
 
-func drawDock(alpha: CGFloat) {
-    ctx.saveGState()
-    ctx.setAlpha(alpha)
-    let shelfPath = CGPath(roundedRect: shelf, cornerWidth: shelfHeight * 0.32, cornerHeight: shelfHeight * 0.32, transform: nil)
-    ctx.addPath(shelfPath)
-    ctx.setFillColor(rgb(1, 1, 1, 0.16))
-    ctx.fillPath()
-    ctx.addPath(shelfPath)
-    ctx.setStrokeColor(rgb(1, 1, 1, 0.28))
-    ctx.setLineWidth(canvas * 0.004)
-    ctx.strokePath()
+// MARK: - Text
 
-    let inset = shelfHeight * 0.16
-    let iconSide = shelfHeight - inset * 2
-    let gap = (shelf.width - inset * 2 - iconSide * CGFloat(colors.count)) / CGFloat(colors.count - 1)
-    for (i, pair) in colors.enumerated() {
-        let rect = CGRect(x: shelf.minX + inset + CGFloat(i) * (iconSide + gap), y: shelf.minY + inset,
-                          width: iconSide, height: iconSide)
-        let path = CGPath(roundedRect: rect, cornerWidth: iconSide * 0.24, cornerHeight: iconSide * 0.24, transform: nil)
-        ctx.saveGState()
-        ctx.addPath(path)
-        ctx.clip()
-        let gradient = CGGradient(colorsSpace: space, colors: [pair.0, pair.1] as CFArray, locations: [0, 1])!
-        ctx.drawLinearGradient(gradient, start: CGPoint(x: rect.midX, y: rect.maxY), end: CGPoint(x: rect.midX, y: rect.minY), options: [])
-        ctx.restoreGState()
-    }
-    ctx.restoreGState()
+func draw(_ string: String, size: CGFloat, at point: CGPoint) {
+    let attributes: [NSAttributedString.Key: Any] = [
+        .font: NSFont.systemFont(ofSize: size, weight: .bold),
+        // White, not the black of the sibling icons: black disappears on deep purple.
+        .foregroundColor: NSColor.white,
+    ]
+    NSAttributedString(string: string, attributes: attributes).draw(at: point)
 }
 
-drawDock(alpha: 1)
+func size(of string: String, size: CGFloat) -> NSSize {
+    let attributes: [NSAttributedString.Key: Any] = [
+        .font: NSFont.systemFont(ofSize: size, weight: .bold)
+    ]
+    return NSAttributedString(string: string, attributes: attributes).size()
+}
 
-// The reflection: the same Dock flipped about the horizon, fading out.
+// Atomic number, top-left, tipped 45° to the left (counterclockwise) about
+// its own centre. Nudged up in the small variant so it still reads once the
+// name is gone.
+let number = "27"
+let numberSize = side * (includeName ? 0.115 : 0.135)
+let numberInset = side * 0.075
+let numberBox = size(of: number, size: numberSize)
+let numberCentre = CGPoint(
+    x: tile.minX + numberInset + numberBox.width / 2,
+    y: tile.maxY - numberInset - numberBox.height / 2
+)
 ctx.saveGState()
-ctx.translateBy(x: 0, y: horizon * 2)
-ctx.scaleBy(x: 1, y: -1)
-ctx.beginTransparencyLayer(auxiliaryInfo: nil)
-drawDock(alpha: 0.55)
-// Fade with distance from the horizon (in flipped space, that's upward).
-ctx.setBlendMode(.destinationIn)
-let fade = CGGradient(colorsSpace: space, colors: [rgb(0, 0, 0, 1), rgb(0, 0, 0, 0)] as CFArray, locations: [0, 1])!
-ctx.drawLinearGradient(fade, start: CGPoint(x: 0, y: horizon), end: CGPoint(x: 0, y: horizon + shelfHeight * 1.3), options: [])
-ctx.endTransparencyLayer()
+ctx.translateBy(x: numberCentre.x, y: numberCentre.y)
+ctx.rotate(by: .pi / 4)
+draw(number, size: numberSize, at: CGPoint(x: -numberBox.width / 2, y: -numberBox.height / 2))
 ctx.restoreGState()
 
-// The mirror line.
-ctx.setFillColor(rgb(1, 1, 1, 0.55))
-ctx.fill(CGRect(x: shelf.minX - tile.width * 0.03, y: horizon - canvas * 0.003, width: shelf.width + tile.width * 0.06, height: canvas * 0.006))
+// "Dm", like an element symbol: centred, and larger without the name below it.
+let symbol = "Dm"
+let symbolSize = side * (includeName ? 0.46 : 0.56)
+let symbolBox = size(of: symbol, size: symbolSize)
+draw(symbol, size: symbolSize, at: CGPoint(
+    x: tile.midX - symbolBox.width / 2,
+    y: tile.minY + side * (includeName ? 0.27 : 0.21)
+))
 
-ctx.restoreGState()
-NSGraphicsContext.restoreGraphicsState()
+// Name along the bottom.
+if includeName {
+    let nameSize = side * 0.077
+    let name = "DockMirror"
+    let nameWidth = size(of: name, size: nameSize).width
+    draw(name, size: nameSize, at: CGPoint(
+        x: tile.midX - nameWidth / 2,
+        y: tile.minY + side * 0.105
+    ))
+}
 
-let out = URL(fileURLWithPath: "Resources/AppIcon.png")
-try! rep.representation(using: .png, properties: [:])!.write(to: out)
-print("wrote \(out.path)")
+image.unlockFocus()
+return image
+}
+
+// MARK: - Write PNGs
+
+func write(_ image: NSImage, to path: String) throws {
+    guard let tiff = image.tiffRepresentation, let rep = NSBitmapImageRep(data: tiff),
+          let png = rep.representation(using: .png, properties: [:]) else {
+        fatalError("failed to render PNG")
+    }
+    try png.write(to: URL(fileURLWithPath: path))
+    print("Wrote \(path)")
+}
+
+try write(renderIcon(includeName: true), to: "Resources/AppIcon.png")
+try write(renderIcon(includeName: false), to: "Resources/AppIcon-small.png")

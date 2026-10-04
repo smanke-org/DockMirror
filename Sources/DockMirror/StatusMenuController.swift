@@ -59,22 +59,18 @@ final class StatusMenuController: NSObject, NSMenuDelegate {
             pause.state = coordinator.state.paused ? .on : .off
             menu.addItem(pause)
             menu.addItem(item("Setup & Preview…", #selector(openSetup)))
+            menu.addItem(intervalMenu())
         }
         menu.addItem(macsMenu())
         menu.addItem(restoreMenu())
         menu.addItem(.separator())
 
-        let login = item("Launch at Login", #selector(toggleLaunchAtLogin))
-        login.state = LaunchAtLoginController.isEnabled ? .on : .off
-        menu.addItem(login)
+        menu.addItem(item("Preferences…", #selector(openPreferences), key: ","))
         if let pending = UpdateAvailability.shared.pending {
             menu.addItem(item("Update to \(pending)…", #selector(checkForUpdates)))
         } else {
             menu.addItem(item("Check for Updates…", #selector(checkForUpdates)))
         }
-        let autoCheck = item("Check for Updates at Launch", #selector(toggleUpdateCheck))
-        autoCheck.state = UpdateSettings.checkForUpdatesAtLaunch ? .on : .off
-        menu.addItem(autoCheck)
         menu.addItem(.separator())
         menu.addItem(disabled("\(AppInfo.shortName) \(AppInfo.displayVersion)"))
         menu.addItem(item("Quit DockMirror", #selector(quit), key: "q"))
@@ -154,6 +150,25 @@ final class StatusMenuController: NSObject, NSMenuDelegate {
         return parent
     }
 
+    private func intervalMenu() -> NSMenuItem {
+        let current = SyncSettings.checkInterval
+        let parent = NSMenuItem(title: "Check Other Macs", action: nil, keyEquivalent: "")
+        let submenu = NSMenu()
+        for interval in SyncInterval.allCases {
+            if interval == .manual { submenu.addItem(.separator()) }
+            let entry = item(interval.title, #selector(setInterval(_:)))
+            entry.tag = interval.rawValue
+            entry.state = interval == current ? .on : .off
+            submenu.addItem(entry)
+        }
+        submenu.addItem(.separator())
+        submenu.addItem(disabled(current == .manual
+            ? "Nothing syncs until you click Sync Now"
+            : "Changes to this Dock still sync right away"))
+        parent.submenu = submenu
+        return parent
+    }
+
     private func roleName(_ role: MacRole?) -> String {
         switch role {
         case .main?: return "main"
@@ -196,7 +211,16 @@ final class StatusMenuController: NSObject, NSMenuDelegate {
     // MARK: - Actions
 
     @objc private func openSetup() { SetupWindowController.shared.show() }
-    @objc private func syncNow() { coordinator.syncNow() }
+    @objc private func syncNow() {
+        // A deliberate Sync Now also re-checks which apps are installed.
+        InstalledApps.invalidate()
+        coordinator.syncNow()
+    }
+
+    @objc private func setInterval(_ sender: NSMenuItem) {
+        guard let interval = SyncInterval(rawValue: sender.tag) else { return }
+        coordinator.setCheckInterval(interval)
+    }
     @objc private func togglePause() { coordinator.setPaused(!coordinator.state.paused) }
     @objc private func applyLargeRemoval() { coordinator.applyLargeRemoval() }
     @objc private func putBack() { coordinator.putBackLocalRemoval() }
@@ -239,15 +263,9 @@ final class StatusMenuController: NSObject, NSMenuDelegate {
         NSWorkspace.shared.open(DockBackups.folder)
     }
 
-    @objc private func toggleLaunchAtLogin() {
-        LaunchAtLoginController.setEnabled(!LaunchAtLoginController.isEnabled)
-    }
+    @objc private func openPreferences() { PreferencesWindowController.shared.show() }
 
     @objc private func checkForUpdates() { UpdateController.checkForUpdates() }
-
-    @objc private func toggleUpdateCheck() {
-        UpdateSettings.checkForUpdatesAtLaunch.toggle()
-    }
 
     @objc private func quit() { NSApp.terminate(nil) }
 

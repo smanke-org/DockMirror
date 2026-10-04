@@ -25,6 +25,18 @@ On first launch DockMirror asks for this Mac's role:
 The setup window previews the resulting Dock. Nothing changes until you click
 **Start Syncing**.
 
+## Preferences
+
+Open **Preferences…** from the menu bar menu (or ⌘,):
+
+- **Check other Macs:** every minute (the default), 5, 15 or 30 minutes,
+  hourly, or only when you click Sync Now. Edits to this Dock are still
+  shared right away. A longer interval only means other Macs' edits arrive
+  later, with less background work.
+- **Show in Dock:** off by default. When on, DockMirror also gets a Dock
+  icon, and right-clicking it offers **Preferences…**.
+- **Launch at Login** and **Check for Updates at Launch.**
+
 ## How it works
 
 - **Storage.** The Dock keeps its layout in the `com.apple.dock` preferences.
@@ -37,9 +49,12 @@ The setup window previews the resulting Dock. Nothing changes until you click
   The most recent change to an app wins. Position keys are fractional, so
   moving one app changes only that app's entry. Edits to different apps on
   different Macs therefore never collide.
-- **Detecting changes.** Changes to the Dock are noticed through FSEvents and
-  acted on after three quiet seconds, so a drag in progress is never synced
-  half-way. Other Macs' files are read every minute and on wake.
+- **Detecting changes.** The Dock rewrites its preferences file for many
+  reasons, Recents included. After three quiet seconds, so a drag in progress
+  is never synced half-way, DockMirror compares just the pinned apps and does
+  a full sync only if they changed. Other Macs' files are checked at the
+  chosen interval and on wake. A file that hasn't changed is never re-read,
+  and app-location lookups are cached for 10 minutes.
 
 ### Safety
 

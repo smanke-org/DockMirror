@@ -47,10 +47,15 @@ enum SyncFolder {
 
     /// Every other Mac's record. Files iCloud has evicted are asked back and
     /// reported in `downloading`, so the caller can keep its last copy.
+    ///
+    /// A file whose modification date hasn't moved since the last read is
+    /// served from memory, so a pass where no other Mac has changed anything
+    /// costs a directory listing instead of a coordinated read and decode per Mac.
     static func readOthers(in folder: URL, excluding ownID: String) -> (records: [DeviceRecord], downloading: Set<String>) {
         let names = (try? FileManager.default.contentsOfDirectory(atPath: folder.path)) ?? []
         var records: [DeviceRecord] = []
         var downloading = Set<String>()
+        var seen = Set<String>()
 
         for name in names {
             if name.hasPrefix("."), name.hasSuffix(".json.icloud") {
@@ -62,13 +67,52 @@ enum SyncFolder {
                 continue
             }
             guard name.hasSuffix(".json"), !name.hasPrefix("."),
-                  let data = coordinatedRead(folder.appendingPathComponent(name)),
+                  String(name.dropLast(".json".count)) != ownID else { continue }
+            let url = folder.appendingPathComponent(name)
+            seen.insert(name)
+            let modified = (try? url.resourceValues(forKeys: [.contentModificationDateKey]))?.contentModificationDate
+
+            if let modified, let cached = cache.value(for: name), cached.modified == modified {
+                records.append(cached.record)
+                continue
+            }
+            guard let data = coordinatedRead(url),
                   let record = try? decoder.decode(DeviceRecord.self, from: data),
                   record.deviceID != ownID else { continue }
+            if let modified { cache.set(name, CachedRecord(modified: modified, record: record)) }
             records.append(record)
         }
+        cache.retain(only: seen)
         return (records, downloading)
     }
+
+    private struct CachedRecord {
+        let modified: Date
+        let record: DeviceRecord
+    }
+
+    /// Read from a background task, so guarded by a lock.
+    private final class RecordCache: @unchecked Sendable {
+        private var entries: [String: CachedRecord] = [:]
+        private let lock = NSLock()
+
+        func value(for name: String) -> CachedRecord? {
+            lock.lock(); defer { lock.unlock() }
+            return entries[name]
+        }
+
+        func set(_ name: String, _ value: CachedRecord) {
+            lock.lock(); defer { lock.unlock() }
+            entries[name] = value
+        }
+
+        func retain(only names: Set<String>) {
+            lock.lock(); defer { lock.unlock() }
+            entries = entries.filter { names.contains($0.key) }
+        }
+    }
+
+    private static let cache = RecordCache()
 
     /// Removes a Mac's file, for "Forget This Mac". A Mac that is still
     /// running DockMirror simply writes it again.

@@ -39,6 +39,10 @@ final class SyncCoordinator {
     private var insertFailures: [String: Int] = [:]
     private var pendingInserts: Set<String> = []
     private var lastInputs: (snapshot: DockPreferences.Snapshot, installed: Set<String>)?
+    private var dockCheck: Timer?
+    /// Counts for `diagnostics`, to see how much work the settings save.
+    private var passCount = 0
+    private var skippedDockChecks = 0
 
     private enum Keys {
         static let state = "sync.state"
@@ -64,13 +68,60 @@ final class SyncCoordinator {
 
     func start() {
         watchDockPreferences()
-        timer = Timer.scheduledTimer(withTimeInterval: 60, repeats: true) { [weak self] _ in
-            Task { @MainActor in self?.syncNow() }
-        }
+        scheduleTimer()
         NSWorkspace.shared.notificationCenter.addObserver(
             forName: NSWorkspace.didWakeNotification, object: nil, queue: .main
         ) { [weak self] _ in
-            Task { @MainActor in self?.scheduleSync(after: 5) }
+            Task { @MainActor in
+                guard SyncSettings.checkInterval != .manual else { return }
+                self?.scheduleSync(after: 5)
+            }
+        }
+        syncNow()
+    }
+
+    func setCheckInterval(_ interval: SyncInterval) {
+        SyncSettings.checkInterval = interval
+        scheduleTimer()
+        recordDiagnostics()
+        NotificationCenter.default.post(name: Self.didUpdateNotification, object: self)
+    }
+
+    /// The periodic check of other Macs. Given 10% tolerance so macOS can
+    /// fold its wake-ups in with other work.
+    private func scheduleTimer() {
+        timer?.invalidate()
+        timer = nil
+        guard let seconds = SyncSettings.checkInterval.seconds else { return }
+        let timer = Timer(timeInterval: seconds, repeats: true) { [weak self] _ in
+            Task { @MainActor in self?.syncNow() }
+        }
+        timer.tolerance = seconds * 0.1
+        RunLoop.main.add(timer, forMode: .common)
+        self.timer = timer
+    }
+
+    /// The Dock rewrites its preferences for many reasons besides pinned apps
+    /// changing — Recents updates every time an app is opened. After a few
+    /// quiet seconds (so a drag in progress is never synced half-way), the
+    /// pinned apps are compared with the last sync's, and a full pass runs
+    /// only if they differ.
+    private func dockPreferencesChanged() {
+        guard SyncSettings.checkInterval != .manual else { return }
+        dockCheck?.invalidate()
+        dockCheck = Timer.scheduledTimer(withTimeInterval: 3, repeats: false) { [weak self] _ in
+            Task { @MainActor in self?.syncIfPinnedAppsChanged() }
+        }
+    }
+
+    private func syncIfPinnedAppsChanged() {
+        guard state.role != nil, !state.paused else { return }
+        let apps = DockPreferences.read().slots.compactMap(\.bundleID)
+        // An app just added that the Dock may have dropped needs its check.
+        guard apps != state.lastObserved || !pendingInserts.isEmpty else {
+            skippedDockChecks += 1
+            recordDiagnostics()
+            return
         }
         syncNow()
     }
@@ -94,7 +145,7 @@ final class SyncCoordinator {
             let names = unsafeBitCast(paths, to: NSArray.self) as? [String] ?? []
             guard names.prefix(count).contains(where: { $0.hasSuffix("/com.apple.dock.plist") }) else { return }
             let coordinator = Unmanaged<SyncCoordinator>.fromOpaque(info).takeUnretainedValue()
-            Task { @MainActor in coordinator.scheduleSync() }
+            Task { @MainActor in coordinator.dockPreferencesChanged() }
         }
         // UseCFTypes makes `paths` a CFArray of strings; without it they arrive
         // as a C array, and bridging that to NSArray crashes.
@@ -225,6 +276,7 @@ final class SyncCoordinator {
             cacheRemotes()
         }
 
+        passCount += 1
         let snapshot = DockPreferences.read()
         trackInsertFailures(in: snapshot)
         let installed = InstalledApps.installed(among: candidates(snapshot: snapshot))
@@ -360,6 +412,9 @@ final class SyncCoordinator {
             "lastSync": lastSync ?? Date(),
             "lastError": lastError ?? "",
             "insertFailures": insertFailures,
+            "checkIntervalSeconds": SyncSettings.checkInterval.rawValue,
+            "passCount": passCount,
+            "skippedDockChecks": skippedDockChecks,
         ]
         if let result = lastResult {
             info["eligibleCount"] = result.eligible.count

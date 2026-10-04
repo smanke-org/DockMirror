@@ -10,9 +10,33 @@ enum InstalledApps {
         NSWorkspace.shared.urlsForApplications(withBundleIdentifier: bundleID).first(where: isOrdinaryLocation)
     }
 
+    /// Results are reused for 10 minutes: a pass checks every app any Mac has
+    /// pinned, and asking Launch Services for each one every time adds up.
+    /// An app installed or deleted meanwhile is noticed on the next refresh,
+    /// or straight away with Sync Now.
+    @MainActor
     static func installed(among bundleIDs: Set<String>) -> Set<String> {
-        bundleIDs.filter { url(for: $0) != nil }
+        let now = Date()
+        if now.timeIntervalSince(cacheDate) > cacheLifetime {
+            cache = [:]
+            cacheDate = now
+        }
+        return bundleIDs.filter { id in
+            if let known = cache[id] { return known }
+            let found = url(for: id) != nil
+            cache[id] = found
+            return found
+        }
     }
+
+    @MainActor
+    static func invalidate() {
+        cache = [:]
+    }
+
+    private static let cacheLifetime: TimeInterval = 600
+    @MainActor private static var cache: [String: Bool] = [:]
+    @MainActor private static var cacheDate = Date.distantPast
 
     private static func isOrdinaryLocation(_ url: URL) -> Bool {
         let path = url.path
