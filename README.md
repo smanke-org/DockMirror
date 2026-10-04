@@ -1,29 +1,54 @@
 # DockMirror
 
-A macOS menu bar app that keeps the pinned apps in your Dock in the same order
-on all of your Macs.
+**Keeps the apps pinned in your Dock in the same order on all of your Macs.**
 
-- Only apps installed on **every** Mac are synced. Apps that are only on one
-  Mac stay where they are on that Mac.
-- Changes sync both ways: add, remove or move an app on any Mac, and the
-  others follow.
-- Recents, folders and stacks on the right side, spacers, and Dock settings
-  are never touched.
+If you use more than one Mac, their Docks drift apart. You pin an app on one Mac and forget
+it on the other, or you reorder things here but not there. Your muscle memory stops working
+whenever you switch machines. DockMirror is a menu bar app that syncs the pinned apps in your
+Dock through iCloud Drive. Add, remove or move an app on any Mac, and the others follow.
 
-## Install
+---
 
-[**Download the latest release**](https://github.com/smanke-org/DockMirror/releases/latest).
-It is a `.dmg` signed with a Developer ID certificate and notarized by Apple.
-Drag `DockMirror.app` to `/Applications` and open it on each Mac. Every Mac
-must be signed in to the same Apple Account with iCloud Drive turned on.
+## ⬇️ Download
 
-On first launch DockMirror asks for this Mac's role:
+<p align="center">
+  <a href="https://github.com/smanke-org/DockMirror/releases/latest/download/DockMirror.dmg">
+    <img src="https://img.shields.io/badge/Download-DockMirror.dmg-2ea44f?style=for-the-badge&logo=apple&logoColor=white" alt="Download DockMirror.dmg" height="48">
+  </a>
+</p>
 
-1. **Main Mac**: its current Dock becomes the starting layout. Set this one up first.
-2. **Secondary Mac**: adopts the main Mac's order for the apps they share.
+1. **[Download DockMirror.dmg](https://github.com/smanke-org/DockMirror/releases/latest/download/DockMirror.dmg)**
+2. Open it and drag **DockMirror** to **Applications**.
+3. Open DockMirror. On your **main Mac** first, choose **Main Mac**. Its Dock becomes the starting layout.
+4. Repeat on each other Mac and choose **Secondary Mac**. The setup window previews the result,
+   and nothing changes until you click **Start Syncing**.
 
-The setup window previews the resulting Dock. Nothing changes until you click
-**Start Syncing**.
+Every Mac must be signed in to the same Apple Account with iCloud Drive turned on.
+Requires macOS 13 or later. Signed with Developer ID and notarized by Apple.
+
+---
+
+## What gets synced
+
+- Only apps installed on **every** Mac are synced. Apps that are only on one Mac stay where
+  they are on that Mac.
+- Changes sync both ways: add, remove or move an app on any Mac, and the others follow.
+- Recents, folders and stacks on the right side, spacers, and Dock settings are never touched.
+
+## Safety
+
+- The whole Dock domain is backed up before every change (the last 50 are
+  kept). **Restore Dock** in the menu puts any of them back.
+- Large removals are held until you confirm them. That covers 5 or more apps
+  at once, or half of the synced apps. Such a change is more likely macOS
+  resetting the Dock than a deliberate edit, and spreading it would empty
+  every Mac's Dock.
+- Uninstalling an app on one Mac stops it being synced. It does not remove it
+  from the other Macs' Docks.
+- A Mac that hasn't been seen in 30 days stops limiting which apps are synced.
+  You can also forget a Mac from the **Macs** menu.
+- If the Dock refuses a tile DockMirror adds, that is never mistaken for you
+  unpinning the app.
 
 ## Preferences
 
@@ -38,6 +63,13 @@ Open **Preferences…** from the menu bar menu (or ⌘,):
   both off, DockMirror keeps syncing with no icon; open it again from
   Applications or Spotlight to get back to Preferences.
 - **Launch at Login** and **Check for Updates at Launch.**
+
+## Updates
+
+DockMirror checks GitHub for a new release quietly at launch. If there is one, the menu offers
+it, and nothing is installed until you click it. Turn off **Check for Updates at Launch** in
+Preferences to stop the check. Before installing, the download must be signed by the same
+developer and notarized by Apple. It is installed in place, so your settings carry over.
 
 ## How it works
 
@@ -58,21 +90,6 @@ Open **Preferences…** from the menu bar menu (or ⌘,):
   chosen interval and on wake. A file that hasn't changed is never re-read,
   and app-location lookups are cached for 10 minutes.
 
-### Safety
-
-- The whole Dock domain is backed up before every change (the last 50 are
-  kept). **Restore Dock** in the menu puts any of them back.
-- Large removals are held until you confirm them. That covers 5 or more apps
-  at once, or half of the synced apps. Such a change is more likely macOS
-  resetting the Dock than a deliberate edit, and spreading it would empty
-  every Mac's Dock.
-- Uninstalling an app on one Mac stops it being synced. It does not remove it
-  from the other Macs' Docks.
-- A Mac that hasn't been seen in 30 days stops limiting which apps are synced.
-  You can also forget a Mac from the **Macs** menu.
-- If the Dock refuses a tile DockMirror adds, that is never mistaken for you
-  unpinning the app.
-
 ## Building
 
 ```bash
@@ -90,11 +107,11 @@ role, the synced order, and the last error or hold.
 
 ```bash
 ./release.sh "Developer ID Application: …"   # sign, notarize, staple
-./make_dmg.sh                                # notarized .dmg
-gh release create vX.Y.Z .build/app/DockMirror-X.Y.Z.dmg --repo smanke-org/DockMirror
+./make_dmg.sh                                # notarized .dmg, plus DockMirror.dmg
+gh release create vX.Y.Z .build/app/DockMirror-X.Y.Z.dmg .build/app/DockMirror.dmg \
+  --repo smanke-org/DockMirror
 ```
 
-The app updates itself from the latest GitHub release's `.dmg`. It checks
-quietly at launch, and offers the update in the menu. The download must pass
-`codesign`, carry the same Team ID, and pass Gatekeeper (notarization) before
-it is installed in place.
+Upload both images. The README's download button points at
+`releases/latest/download/DockMirror.dmg`, which only works if every release
+carries a file with exactly that name.
