@@ -33,8 +33,10 @@ Open **Preferences…** from the menu bar menu (or ⌘,):
   hourly, or only when you click Sync Now. Edits to this Dock are still
   shared right away. A longer interval only means other Macs' edits arrive
   later, with less background work.
-- **Show in Dock:** off by default. When on, DockMirror also gets a Dock
-  icon, and right-clicking it offers **Preferences…**.
+- **Show in Dock** (off by default) and **Show in menu bar** (on), in any
+  combination. Right-clicking the Dock icon offers **Preferences…**. With
+  both off, DockMirror keeps syncing with no icon; open it again from
+  Applications or Spotlight to get back to Preferences.
 - **Launch at Login** and **Check for Updates at Launch.**
 
 ## How it works

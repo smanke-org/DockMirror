@@ -1,32 +1,6 @@
 import AppKit
 import SwiftUI
 
-/// Whether DockMirror shows an icon in the Dock as well as in the menu bar.
-/// Off by default; when on, the Dock icon's menu offers Preferences….
-enum DockIconSettings {
-    private static let key = "showInDock"
-
-    static var showInDock: Bool {
-        get { UserDefaults.standard.bool(forKey: key) }
-        set { UserDefaults.standard.set(newValue, forKey: key) }
-    }
-
-    @MainActor
-    static func apply() {
-        if showInDock {
-            NSApp.setActivationPolicy(.regular)
-        } else {
-            // Going back to .accessory while the app is active and showing a
-            // window doesn't take if done synchronously; a runloop turn later does.
-            DispatchQueue.main.async {
-                NSApp.setActivationPolicy(.accessory)
-                // Dropping out of the Dock deactivates the app; keep Preferences in front.
-                PreferencesWindowController.shared.bringForwardIfOpen()
-            }
-        }
-    }
-}
-
 @MainActor
 final class PreferencesWindowController {
     static let shared = PreferencesWindowController()
@@ -45,19 +19,13 @@ final class PreferencesWindowController {
         window?.makeKeyAndOrderFront(nil)
     }
 
-    func bringForwardIfOpen() {
-        guard let window, window.isVisible else { return }
-        // Leaving the Dock deactivates the app, and macOS then refuses a plain
-        // activate; ordering the window front regardless keeps it in view.
-        window.orderFrontRegardless()
-        NSApp.activate(ignoringOtherApps: true)
-        window.makeKey()
-    }
+    var visibleWindow: NSWindow? { window?.isVisible == true ? window : nil }
 }
 
 private struct PreferencesView: View {
     @State private var interval = SyncSettings.checkInterval
-    @State private var showInDock = DockIconSettings.showInDock
+    @State private var showInDock = AppPresence.showInDock
+    @State private var showInMenuBar = AppPresence.showInMenuBar
     @State private var launchAtLogin = LaunchAtLoginController.isEnabled
     @State private var checkForUpdates = UpdateSettings.checkForUpdatesAtLaunch
 
@@ -79,10 +47,14 @@ private struct PreferencesView: View {
 
             Section {
                 Toggle("Show in Dock", isOn: $showInDock)
-                Text("Adds a Dock icon whose menu opens these preferences. DockMirror stays in the menu bar either way.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
+                    .help("Adds a Dock icon whose right-click menu opens these preferences.")
+                Toggle("Show in menu bar", isOn: $showInMenuBar)
+                if !showInDock && !showInMenuBar {
+                    Text(AppPresence.hiddenEverywhereNote(appName: "DockMirror", settingsName: "Preferences"))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
                 Toggle("Launch at Login", isOn: $launchAtLogin)
                 Toggle("Check for Updates at Launch", isOn: $checkForUpdates)
             } header: {
@@ -99,9 +71,10 @@ private struct PreferencesView: View {
         // didSet on @State doesn't fire through a binding; onChange does.
         .onChange(of: interval) { SyncCoordinator.shared.setCheckInterval($0) }
         .onChange(of: showInDock) {
-            DockIconSettings.showInDock = $0
-            DockIconSettings.apply()
+            AppPresence.showInDock = $0
+            AppPresence.applyDock(keepInFront: PreferencesWindowController.shared.visibleWindow)
         }
+        .onChange(of: showInMenuBar) { AppPresence.showInMenuBar = $0 }
         .onChange(of: launchAtLogin) { enabled in
             if !LaunchAtLoginController.setEnabled(enabled) {
                 launchAtLogin = LaunchAtLoginController.isEnabled

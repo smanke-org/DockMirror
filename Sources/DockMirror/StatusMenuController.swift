@@ -18,6 +18,12 @@ final class StatusMenuController: NSObject, NSMenuDelegate {
         super.init()
         menu.delegate = self
         statusItem.menu = menu
+        // Preferences can hide the menu bar icon (the app then lives in the Dock, or nowhere).
+        statusItem.isVisible = AppPresence.showInMenuBar
+        NotificationCenter.default.addObserver(forName: AppPresence.menuBarDidChange, object: nil,
+                                               queue: .main) { [weak self] _ in
+            Task { @MainActor in self?.statusItem.isVisible = AppPresence.showInMenuBar }
+        }
         updateIcon()
         NotificationCenter.default.addObserver(forName: SyncCoordinator.didUpdateNotification,
                                                object: nil, queue: .main) { [weak self] _ in
