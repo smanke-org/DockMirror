@@ -11,7 +11,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         statusMenu = StatusMenuController()
         SyncCoordinator.shared.start()
 
-        if SyncCoordinator.shared.state.role == nil {
+        // DOCKMIRROR_SHOW_SETUP=1 opens setup at launch, for testing it without the menu.
+        if SyncCoordinator.shared.state.role == nil
+            || ProcessInfo.processInfo.environment["DOCKMIRROR_SHOW_SETUP"] == "1" {
             SetupWindowController.shared.show()
         }
 

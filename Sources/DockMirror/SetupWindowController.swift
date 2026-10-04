@@ -11,13 +11,18 @@ final class SetupWindowController {
 
     func show() {
         if window == nil {
-            let hosting = NSHostingController(rootView: SetupView(close: { [weak self] in self?.window?.close() }))
-            let window = NSWindow(contentViewController: hosting)
+            let window = NSWindow(contentRect: .zero, styleMask: [.titled, .closable], backing: .buffered, defer: true)
             window.title = "DockMirror Setup"
-            window.styleMask = [.titled, .closable]
             window.isReleasedWhenClosed = false
-            window.center()
             self.window = window
+        }
+        // A fresh view each time the window opens, so it reflects whether this
+        // Mac is syncing now rather than when the window was first made.
+        if let window, !window.isVisible {
+            let hosting = NSHostingController(rootView: SetupView(close: { [weak self] in self?.window?.close() }))
+            window.contentViewController = hosting
+            window.setContentSize(hosting.view.fittingSize)
+            window.center()
         }
         // Ordering the window front together with activating is what makes an
         // accessory app actually come forward on macOS 27.
@@ -39,6 +44,8 @@ private struct SetupView: View {
     @State private var role: MacRole = SyncCoordinator.shared.state.role ?? .secondary
     @State private var rows: [PreviewRow] = []
     @State private var otherMacs = 0
+    /// While syncing, only Stop is offered; the role can be changed once stopped.
+    private var isSyncing: Bool { coordinator.state.role != nil }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
@@ -54,8 +61,11 @@ private struct SetupView: View {
                 Text("A secondary Mac — adopt the main Mac's layout").tag(MacRole.secondary)
             }
             .pickerStyle(.radioGroup)
+            .disabled(isSyncing)
 
-            Text(otherMacs == 0
+            Text(isSyncing
+                 ? "This Mac is syncing. Stop syncing to change its role."
+                 : otherMacs == 0
                  ? "No other Macs found yet. Set up the main Mac first, or wait for iCloud Drive to catch up."
                  : "\(otherMacs) other Mac\(otherMacs == 1 ? "" : "s") found.")
                 .font(.caption)
@@ -75,12 +85,11 @@ private struct SetupView: View {
             .frame(minHeight: 260)
 
             HStack {
-                if coordinator.state.role != nil {
-                    Button("Stop Syncing This Mac") {
-                        coordinator.leave()
-                        close()
-                    }
+                Button("Stop Syncing This Mac") {
+                    coordinator.leave()
+                    close()
                 }
+                .disabled(!isSyncing)
                 Spacer()
                 Button("Cancel") { close() }
                     .keyboardShortcut(.cancelAction)
@@ -89,6 +98,7 @@ private struct SetupView: View {
                     coordinator.setUp(role: role)
                     close()
                 }
+                .disabled(isSyncing)
             }
         }
         .padding(20)
