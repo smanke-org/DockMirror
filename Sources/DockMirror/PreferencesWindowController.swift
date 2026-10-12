@@ -9,7 +9,7 @@ final class PreferencesWindowController {
     func show() {
         if window == nil {
             let window = NSWindow(contentViewController: NSHostingController(rootView: PreferencesView()))
-            window.title = "DockMirror Preferences"
+            window.title = "DockMirror Settings"
             window.styleMask = [.titled, .closable]
             window.isReleasedWhenClosed = false
             window.center()
@@ -27,7 +27,6 @@ private struct PreferencesView: View {
     @State private var showInDock = AppPresence.showInDock
     @State private var showInMenuBar = AppPresence.showInMenuBar
     @State private var launchAtLogin = LaunchAtLoginController.isEnabled
-    @State private var checkForUpdates = UpdateSettings.checkForUpdatesAtLaunch
 
     var body: some View {
         Form {
@@ -47,19 +46,20 @@ private struct PreferencesView: View {
 
             Section {
                 Toggle("Show in Dock", isOn: $showInDock)
-                    .help("Adds a Dock icon whose right-click menu opens these preferences.")
+                    .help("Adds a Dock icon whose right-click menu opens these settings.")
                 Toggle("Show in menu bar", isOn: $showInMenuBar)
                 if !showInDock && !showInMenuBar {
-                    Text(AppPresence.hiddenEverywhereNote(appName: "DockMirror", settingsName: "Preferences"))
+                    Text(AppPresence.hiddenEverywhereNote(appName: "DockMirror", settingsName: "Settings"))
                         .font(.caption)
                         .foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
                 }
                 Toggle("Launch at Login", isOn: $launchAtLogin)
-                Toggle("Check for Updates at Launch", isOn: $checkForUpdates)
             } header: {
                 Text("General")
             }
+
+            SyncUpdateSections()
 
             Text("\(AppInfo.shortName) \(AppInfo.displayVersion)")
                 .font(.caption)
@@ -80,6 +80,5 @@ private struct PreferencesView: View {
                 launchAtLogin = LaunchAtLoginController.isEnabled
             }
         }
-        .onChange(of: checkForUpdates) { UpdateSettings.checkForUpdatesAtLaunch = $0 }
     }
 }

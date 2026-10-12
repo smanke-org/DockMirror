@@ -5,8 +5,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var statusMenu: StatusMenuController?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        // Before anything saves a setting: an empty domain means a brand-new install.
+        let newInstall = SettingsSync.domainIsEmpty()
         UpdateSettings.registerDefaults()
-        NSApp.mainMenu = AppPresence.mainMenu(appName: "DockMirror", settingsTitle: "Preferences…",
+        NSApp.mainMenu = AppPresence.mainMenu(appName: "DockMirror", settingsTitle: "Settings…",
                                               target: self, settings: #selector(openPreferences))
         if AppPresence.showInDock { AppPresence.applyDock() }
         statusMenu = StatusMenuController()
@@ -18,17 +20,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             SetupWindowController.shared.show()
         }
 
-        // Silent: it only records an available update for the menu to offer.
-        if UpdateSettings.checkForUpdatesAtLaunch {
-            DispatchQueue.main.asyncAfter(deadline: .now() + 5) {
-                UpdateController.checkForUpdates(silent: true)
-            }
-        }
+        // An automatic update must not restart DockMirror while it is changing the Dock.
+        AutoUpdater.shared.appBusyReason = { SyncCoordinator.shared.isBusy ? "the Dock is being synced" : nil }
+        SettingsSync.shared.onApply = { SyncCoordinator.shared.setCheckInterval(SyncSettings.checkInterval) }
+        if newInstall { SettingsSync.shared.adoptOnNewInstall() }
+        SettingsSync.shared.start()
+        AutoUpdater.shared.start()
     }
 
     /// The Dock icon's right-click menu, shown when "Show in Dock" is on.
     func applicationDockMenu(_ sender: NSApplication) -> NSMenu? {
-        AppPresence.dockMenu(title: "Preferences…", target: self, action: #selector(openPreferences))
+        AppPresence.dockMenu(title: "Settings…", target: self, action: #selector(openPreferences))
     }
 
     /// Clicking the Dock icon, or opening the app again from Applications or

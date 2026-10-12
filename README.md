@@ -50,25 +50,39 @@ Requires macOS 13 or later. Signed with Developer ID and notarized by Apple.
 - If the Dock refuses a tile DockMirror adds, that is never mistaken for you
   unpinning the app.
 
-## Preferences
+## Settings
 
-Open **Preferences…** from the menu bar menu (or ⌘,):
+Open **Settings…** from the menu bar menu (or ⌘,):
 
 - **Check other Macs:** every minute (the default), 5, 15 or 30 minutes,
   hourly, or only when you click Sync Now. Edits to this Dock are still
   shared right away. A longer interval only means other Macs' edits arrive
   later, with less background work.
 - **Show in Dock** (off by default) and **Show in menu bar** (on), in any
-  combination. Right-clicking the Dock icon offers **Preferences…**. With
+  combination. Right-clicking the Dock icon offers **Settings…**. With
   both off, DockMirror keeps syncing with no icon; open it again from
-  Applications or Spotlight to get back to Preferences.
-- **Launch at Login** and **Check for Updates at Launch.**
+  Applications or Spotlight to get back to Settings.
+- **Launch at Login.**
+- **Sync settings with your other Macs:** how often to check other Macs, where
+  DockMirror appears and the update choice follow you to every Mac on the same
+  iCloud account, through `iCloud Drive/DockMirror/Settings.plist`. This is
+  separate from the Dock itself, which DockMirror already syncs; each Mac's
+  role stays its own. A brand-new install that finds this file turns sync on and
+  starts from your settings.
 
 ## Updates
 
-DockMirror checks GitHub for a new release quietly at launch. If there is one, the menu offers
-it, and nothing is installed until you click it. Turn off **Check for Updates at Launch** in
-Preferences to stop the check. Before installing, the download must be signed by the same
+DockMirror checks GitHub for a new release shortly after launch and every 30 minutes.
+**When an update is available** in Settings decides what happens:
+
+- **Ask me first** (the default): a notification and an *Update to …* menu item; nothing
+  installs until you click it.
+- **Install automatically**: the update is downloaded and checked right away, then installed
+  once no Dock change is being applied or waiting for your confirmation, no app is presenting
+  or keeping the display awake, and the Mac hasn't been used for 2 minutes.
+- **Don't check**: *Check for Updates…* in the menu still works.
+
+ Before installing, the download must be signed by the same
 developer and notarized by Apple. It is installed in place, so your settings carry over.
 
 ## How it works

@@ -27,6 +27,8 @@ final class SyncCoordinator {
     private let dryRun = ProcessInfo.processInfo.environment["DOCKMIRROR_DRY_RUN"] == "1"
 
     private var running = false
+    /// A sync cycle is changing the Dock, or a large removal is waiting for confirmation.
+    var isBusy: Bool { running || lastResult?.hold != nil }
     private var rerunRequested = false
     private var debounce: Timer?
     private var timer: Timer?

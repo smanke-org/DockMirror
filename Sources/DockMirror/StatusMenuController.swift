@@ -71,8 +71,10 @@ final class StatusMenuController: NSObject, NSMenuDelegate {
         menu.addItem(restoreMenu())
         menu.addItem(.separator())
 
-        menu.addItem(item("Preferences…", #selector(openPreferences), key: ","))
-        if let pending = UpdateAvailability.shared.pending {
+        menu.addItem(item("Settings…", #selector(openPreferences), key: ","))
+        if let staged = AutoUpdater.shared.staged {
+            menu.addItem(item("Update to \(staged.version) Now", #selector(installStagedUpdate)))
+        } else if let pending = UpdateAvailability.shared.pending {
             menu.addItem(item("Update to \(pending)…", #selector(checkForUpdates)))
         } else {
             menu.addItem(item("Check for Updates…", #selector(checkForUpdates)))
@@ -270,6 +272,8 @@ final class StatusMenuController: NSObject, NSMenuDelegate {
     }
 
     @objc private func openPreferences() { PreferencesWindowController.shared.show() }
+
+    @MainActor @objc private func installStagedUpdate() { AutoUpdater.shared.installNow() }
 
     @objc private func checkForUpdates() { UpdateController.checkForUpdates() }
 
