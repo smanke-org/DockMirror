@@ -8,8 +8,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // Before anything saves a setting: an empty domain means a brand-new install.
         let newInstall = SettingsSync.domainIsEmpty()
         UpdateSettings.registerDefaults()
-        NSApp.mainMenu = AppPresence.mainMenu(appName: "DockMirror", settingsTitle: "Settings…",
-                                              target: self, settings: #selector(openPreferences))
+        let mainMenu = AppPresence.mainMenu(appName: "DockMirror", settingsTitle: "Settings…",
+                                            target: self, settings: #selector(openPreferences))
+        // Right below About in the app menu.
+        let otherApps = NSMenuItem(title: "Our other apps…", action: #selector(showOtherApps), keyEquivalent: "")
+        otherApps.target = self
+        mainMenu.items.first?.submenu?.insertItem(otherApps, at: 1)
+        NSApp.mainMenu = mainMenu
         if AppPresence.showInDock { AppPresence.applyDock() }
         statusMenu = StatusMenuController()
         SyncCoordinator.shared.start()
@@ -42,5 +47,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     @objc func openPreferences() {
         PreferencesWindowController.shared.show()
+    }
+
+    /// The developer's site, which lists every app.
+    @objc func showOtherApps() {
+        if let url = URL(string: "https://stevemanke.com/") { NSWorkspace.shared.open(url) }
     }
 }
