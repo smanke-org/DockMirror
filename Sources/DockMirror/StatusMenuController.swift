@@ -79,6 +79,8 @@ final class StatusMenuController: NSObject, NSMenuDelegate {
         } else {
             menu.addItem(item("Check for Updates…", #selector(checkForUpdates)))
         }
+        menu.addItem(item("About DockMirror", #selector(showAbout)))
+        menu.addItem(item("Our other apps…", #selector(showOtherApps)))
         menu.addItem(.separator())
         menu.addItem(disabled("\(AppInfo.shortName) \(AppInfo.displayVersion)"))
         menu.addItem(item("Quit DockMirror", #selector(quit), key: "q"))
@@ -278,6 +280,14 @@ final class StatusMenuController: NSObject, NSMenuDelegate {
     @objc private func checkForUpdates() { UpdateController.checkForUpdates() }
 
     @objc private func quit() { NSApp.terminate(nil) }
+    @objc private func showAbout() {
+        NSApp.activate(ignoringOtherApps: true)
+        NSApp.orderFrontStandardAboutPanel(nil)
+    }
+    /// The developer's site, which lists every app.
+    @objc private func showOtherApps() {
+        if let url = URL(string: "https://stevemanke.com/") { NSWorkspace.shared.open(url) }
+    }
 
     // MARK: - Confirmation
 
