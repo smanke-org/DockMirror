@@ -31,6 +31,9 @@ struct SyncUpdateSections: View {
             Picker("When an update is available", selection: $updater.policy) {
                 ForEach(UpdatePolicy.allCases, id: \.self) { Text($0.title).tag($0) }
             }
+            if updater.policy != .off {
+                UpdateIntervalPicker(interval: $updater.interval)
+            }
             if let staged = updater.staged {
                 LabeledContent("Version \(staged.version) is ready") {
                     Button("Install Now") { updater.installNow() }
@@ -54,6 +57,7 @@ struct SyncUpdateSections: View {
             Text("Updates")
         } footer: {
             Text(updateFooter).font(.caption).foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
         }
         .onAppear { updater.refreshNotificationStatus() }
     }
@@ -61,9 +65,9 @@ struct SyncUpdateSections: View {
     private var updateFooter: String {
         switch updater.policy {
         case .automatic:
-            return "DockMirror checks every 30 minutes. A new version installs itself when no Dock change is being applied or waiting for your confirmation, no app is presenting or keeping the screen awake, and your Mac hasn't been used for 2 minutes. You'll get a notification when it's done."
+            return "DockMirror checks \(updater.interval.phrase). A new version installs itself when no Dock change is being applied or waiting for your confirmation, no app is presenting or keeping the screen awake, and your Mac hasn't been used for 2 minutes. You'll get a notification when it's done."
         case .ask:
-            return "DockMirror checks every 30 minutes and sends a notification when a new version is out. Nothing installs until you choose to."
+            return "DockMirror checks \(updater.interval.phrase) and sends a notification when a new version is out. Nothing installs until you choose to."
         case .off:
             return "DockMirror won't look for updates on its own. Use Check Now whenever you like."
         }

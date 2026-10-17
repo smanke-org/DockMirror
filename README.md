@@ -75,7 +75,7 @@ resumes syncing, and `dockmirror://setup` opens Setup & Preview.
 
 ## Updates
 
-DockMirror checks GitHub for a new release shortly after launch and every 30 minutes.
+DockMirror checks GitHub for a new release once a day, or as often as you choose in Settings (a number of hours, days, weeks or months).
 **When an update is available** in Settings decides what happens:
 
 - **Ask me first** (the default): a notification and an *Update to …* menu item; nothing
