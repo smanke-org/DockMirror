@@ -49,6 +49,27 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         PreferencesWindowController.shared.show()
     }
 
+    /// `dockmirror://sync`, `pause` (pause or resume) and `setup` (from ToolHUD, Shortcuts or
+    /// a script) do what the menu items do; anything else opens Settings. A Mac that isn't
+    /// set up yet gets the setup window instead of a sync.
+    func application(_ application: NSApplication, open urls: [URL]) {
+        let coordinator = SyncCoordinator.shared
+        for url in urls where url.scheme == "dockmirror" {
+            switch url.host {
+            case "sync" where coordinator.state.role != nil:
+                // A deliberate Sync Now also re-checks which apps are installed.
+                InstalledApps.invalidate()
+                coordinator.syncNow()
+            case "pause" where coordinator.state.role != nil:
+                coordinator.setPaused(!coordinator.state.paused)
+            case "sync", "pause", "setup":
+                SetupWindowController.shared.show()
+            default:
+                openPreferences()
+            }
+        }
+    }
+
     /// The developer's site, which lists every app.
     @objc func showOtherApps() {
         if let url = URL(string: "https://stevemanke.com/") { NSWorkspace.shared.open(url) }

@@ -70,6 +70,9 @@ Open **Settings…** from the menu bar menu (or ⌘,):
   role stays its own. A brand-new install that finds this file turns sync on and
   starts from your settings.
 
+For ToolHUD, Shortcuts or scripts, `dockmirror://sync` syncs now, `dockmirror://pause` pauses or
+resumes syncing, and `dockmirror://setup` opens Setup & Preview.
+
 ## Updates
 
 DockMirror checks GitHub for a new release shortly after launch and every 30 minutes.
