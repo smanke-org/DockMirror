@@ -16,6 +16,17 @@
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
 	<string>1.0.7</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>DockMirror</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>dockmirror</string>
+			</array>
+		</dict>
+	</array>
 	<key>CFBundleVersion</key>
 	<string>1.0.7</string>
 	<key>LSMinimumSystemVersion</key>
@@ -24,5 +35,44 @@
 	<true/>
 	<key>NSHumanReadableCopyright</key>
 	<string>Personal use</string>
+	<key>ToolHUDActions</key>
+	<array>
+		<dict>
+			<key>activates</key>
+			<false/>
+			<key>id</key>
+			<string>sync</string>
+			<key>shortTitle</key>
+			<string>Sync Dock</string>
+			<key>symbol</key>
+			<string>arrow.triangle.2.circlepath</string>
+			<key>title</key>
+			<string>Sync the Dock now</string>
+		</dict>
+		<dict>
+			<key>activates</key>
+			<false/>
+			<key>id</key>
+			<string>pause</string>
+			<key>shortTitle</key>
+			<string>Pause Dock sync</string>
+			<key>symbol</key>
+			<string>pause.circle</string>
+			<key>title</key>
+			<string>Pause or resume Dock syncing</string>
+		</dict>
+		<dict>
+			<key>activates</key>
+			<true/>
+			<key>id</key>
+			<string>setup</string>
+			<key>shortTitle</key>
+			<string>Dock setup</string>
+			<key>symbol</key>
+			<string>dock.rectangle</string>
+			<key>title</key>
+			<string>Set up and preview</string>
+		</dict>
+	</array>
 </dict>
 </plist>
