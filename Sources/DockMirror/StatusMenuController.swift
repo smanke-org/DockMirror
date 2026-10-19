@@ -71,6 +71,10 @@ final class StatusMenuController: NSObject, NSMenuDelegate {
         menu.addItem(restoreMenu())
         menu.addItem(.separator())
 
+        let helpEntry = NSMenuItem(title: "DockMirror Help", action: #selector(showHelp), keyEquivalent: "")
+        helpEntry.target = self
+        helpEntry.image = NSImage(systemSymbolName: "questionmark.circle", accessibilityDescription: nil)
+        menu.addItem(helpEntry)
         menu.addItem(item("Settings…", #selector(openPreferences), key: ","))
         if let staged = AutoUpdater.shared.staged {
             menu.addItem(item("Update to \(staged.version) Now", #selector(installStagedUpdate)))
@@ -273,6 +277,7 @@ final class StatusMenuController: NSObject, NSMenuDelegate {
         NSWorkspace.shared.open(DockBackups.folder)
     }
 
+    @objc private func showHelp() { HelpWindow.shared.show() }
     @objc private func openPreferences() { PreferencesWindowController.shared.show() }
 
     @MainActor @objc private func installStagedUpdate() { AutoUpdater.shared.installNow() }

@@ -15,9 +15,26 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let otherApps = NSMenuItem(title: "Our other apps…", action: #selector(showOtherApps), keyEquivalent: "")
         otherApps.target = self
         mainMenu.items.first?.submenu?.insertItem(otherApps, at: 1)
+        // Help menu, with the standard ⌘? (macOS adds its search field).
+        let helpItem = NSMenuItem()
+        let help = NSMenu(title: "Help")
+        let helpOpen = NSMenuItem(title: "DockMirror Help", action: #selector(showHelp), keyEquivalent: "?")
+        helpOpen.target = self
+        help.addItem(helpOpen)
+        helpItem.submenu = help
+        mainMenu.addItem(helpItem)
+        NSApp.helpMenu = help
         NSApp.mainMenu = mainMenu
         if AppPresence.showInDock { AppPresence.applyDock() }
         statusMenu = StatusMenuController()
+        #if DEBUG
+        // A test run shares the installed app's settings, so it checks Help and stops
+        // before sync or anything else starts.
+        if let snapshot = ProcessInfo.processInfo.environment["DOCKMIRROR_DEBUG_HELP_TEST"] {
+            DebugHelpTest.run(snapshot: snapshot, delegate: statusMenu)
+            return
+        }
+        #endif
         SyncCoordinator.shared.start()
 
         // DOCKMIRROR_SHOW_SETUP=1 opens setup at launch, for testing it without the menu.
@@ -45,6 +62,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         PreferencesWindowController.shared.show()
         return true
     }
+
+    @objc func showHelp() { HelpWindow.shared.show() }
+
 
     @objc func openPreferences() {
         PreferencesWindowController.shared.show()

@@ -73,9 +73,14 @@ private struct PreferencesView: View {
 
             SyncUpdateSections()
 
-            Text("\(AppInfo.shortName) \(AppInfo.displayVersion)")
-                .font(.caption)
-                .foregroundStyle(.secondary)
+            // The version, with the round Help button in the corner, as macOS does.
+            HStack {
+                Text("\(AppInfo.shortName) \(AppInfo.displayVersion)")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                Spacer()
+                HelpButton(topic: "getting-started").fixedSize()
+            }
         }
         .formStyle(.grouped)
         .frame(width: 440)
