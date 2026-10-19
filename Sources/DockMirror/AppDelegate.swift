@@ -8,6 +8,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // Before anything saves a setting: an empty domain means a brand-new install.
         let newInstall = SettingsSync.domainIsEmpty()
         UpdateSettings.registerDefaults()
+        AppAppearance.start()
         let mainMenu = AppPresence.mainMenu(appName: "DockMirror", settingsTitle: "Settings…",
                                             target: self, settings: #selector(openPreferences))
         // Right below About in the app menu.

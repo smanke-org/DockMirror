@@ -30,6 +30,7 @@ private struct PreferencesView: View {
 
     var body: some View {
         Form {
+            AppearanceSection(appName: "DockMirror")
             Section {
                 Picker("Check other Macs", selection: $interval) {
                     ForEach(SyncInterval.allCases, id: \.self) { Text($0.title).tag($0) }
