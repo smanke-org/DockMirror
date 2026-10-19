@@ -8,10 +8,21 @@ final class PreferencesWindowController {
 
     func show() {
         if window == nil {
-            let window = NSWindow(contentViewController: NSHostingController(rootView: PreferencesView()))
+            // Sized here, not by SwiftUI: open at the content's natural height but never taller
+            // than the screen (a MacBook Air can't fit it all), and scroll whatever is cut off.
+            // Letting SwiftUI size a window that AppKit then clamps loops until AppKit aborts.
+            let natural = NSHostingView(rootView: PreferencesView()).fittingSize
+            let screen = NSScreen.main?.visibleFrame.size ?? natural
+            let size = NSSize(width: natural.width, height: min(natural.height, max(screen.height - 80, 240)))
+            let hosting = NSHostingController(rootView: ScrollView(.vertical) { PreferencesView() }.frame(maxHeight: .infinity))
+            hosting.sizingOptions = []
+            let window = NSWindow(contentViewController: hosting)
             window.title = "DockMirror Settings"
-            window.styleMask = [.titled, .closable]
+            window.styleMask = [.titled, .closable, .resizable]
             window.isReleasedWhenClosed = false
+            window.setContentSize(size)
+            window.contentMinSize = NSSize(width: size.width, height: 200)
+            window.contentMaxSize = NSSize(width: size.width, height: .greatestFiniteMagnitude)
             window.center()
             self.window = window
         }
