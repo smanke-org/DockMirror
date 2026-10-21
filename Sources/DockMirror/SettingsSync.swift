@@ -35,6 +35,7 @@ final class SettingsSync: ObservableObject {
     static let keys = [
         "showInDock",
         "showInMenuBar",
+        MenuHub.foldKey,
         AppAppearance.key,
         "sync.checkInterval", UpdatePolicy.key, UpdateInterval.valueKey, UpdateInterval.unitKey,
     ]
@@ -43,7 +44,7 @@ final class SettingsSync: ObservableObject {
     /// registered default. Uploading these too means a Mac adopting the file never mistakes
     /// "at its default" for "missing".
     private static let fallbacks: [String: Any] = [
-        "showInDock": false, "showInMenuBar": true, AppAppearance.key: AppAppearance.system.rawValue, "sync.checkInterval": 60
+        "showInDock": false, "showInMenuBar": true, MenuHub.foldKey: true, AppAppearance.key: AppAppearance.system.rawValue, "sync.checkInterval": 60
     ]
 
     private var localModified: Date? {
@@ -251,6 +252,7 @@ final class SettingsSync: ObservableObject {
 
         // Tell everything that reads these settings to look again.
         NotificationCenter.default.post(name: AppPresence.menuBarDidChange, object: nil)
+        MenuHub.shared.reload()
         AppPresence.applyDock()
         AutoUpdater.shared.reloadPolicy()
         onApply?()

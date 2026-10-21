@@ -38,6 +38,7 @@ private struct PreferencesView: View {
     @State private var showInDock = AppPresence.showInDock
     @State private var showInMenuBar = AppPresence.showInMenuBar
     @State private var launchAtLogin = LaunchAtLoginController.isEnabled
+    @ObservedObject private var hub = MenuHub.shared
 
     var body: some View {
         Form {
@@ -60,6 +61,8 @@ private struct PreferencesView: View {
                 Toggle("Show in Dock", isOn: $showInDock)
                     .help("Adds a Dock icon whose right-click menu opens these settings.")
                 Toggle("Show in menu bar", isOn: $showInMenuBar)
+                Toggle("Put in ToolHUD’s menu while ToolHUD is running", isOn: $hub.foldIntoToolHUD)
+                    .help("ToolHUD shows this menu as a submenu of its own, and DockMirror’s icon leaves the menu bar until ToolHUD quits.")
                 if !showInDock && !showInMenuBar {
                     Text(AppPresence.hiddenEverywhereNote(appName: "DockMirror", settingsName: "Settings"))
                         .font(.caption)
