@@ -132,3 +132,7 @@ gh release create vX.Y.Z .build/app/DockMirror-X.Y.Z.dmg .build/app/DockMirror.d
 Upload both images. The README's download button points at
 `releases/latest/download/DockMirror.dmg`, which only works if every release
 carries a file with exactly that name.
+
+## License
+
+© 2026 Steve Manke. All rights reserved.
