@@ -24,7 +24,7 @@ struct SyncUpdateSections: View {
         } header: {
             Text("iCloud")
         } footer: {
-            Text("How often to check other Macs, where DockMirror appears and the update choice follow you to every Mac signed in to the same iCloud account with sync turned on. This is separate from the Dock itself, which DockMirror already syncs; each Mac's role stays its own.")
+            Text("How often to check other Macs, where DockMirror appears, asking before quitting and the update choice follow you to every Mac signed in to the same iCloud account with sync turned on. This is separate from the Dock itself, which DockMirror already syncs; each Mac's role stays its own.")
                 .font(.caption).foregroundStyle(.secondary)
         }
         Section {

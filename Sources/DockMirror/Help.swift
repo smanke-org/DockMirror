@@ -47,6 +47,7 @@ enum Help {
             .text("Choose Set Up… in the menu bar menu on each Mac. Pick one Mac as the main Mac; its Dock is the starting layout. The others are secondary Macs and adopt the main Mac's layout. The setup window previews what the Dock will look like before you start."),
             .tip("DockMirror backs up the Dock before every change, so any change can be undone from Restore Dock in the menu bar menu."),
             .tip("While ToolHUD is running, DockMirror's menu moves into ToolHUD's menu bar menu as a submenu, and the icon here steps aside until ToolHUD quits. To keep the icon, turn off \"Put in ToolHUD's menu while ToolHUD is running\" in Settings."),
+            .tip("Quitting asks first, since this Mac's Dock stops syncing while DockMirror is closed. Turn off \"Ask before quitting\" in Settings › General, or tick \"Don't ask again\" when it asks."),
         ]),
 
         HelpTopic(id: "syncing", title: "How Syncing Works", symbol: "arrow.triangle.2.circlepath", blocks: [

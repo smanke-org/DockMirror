@@ -233,6 +233,7 @@ enum UpdateController {
 
     /// Hands the swap to a detached shell script, because the app cannot
     /// replace and relaunch itself while it is the one running.
+    @MainActor
     static func installAndRelaunch(from stagedApp: URL) throws {
         let destination = Bundle.main.bundlePath
         let staging = stagedApp.deletingLastPathComponent()
@@ -277,7 +278,7 @@ enum UpdateController {
                           destination, requirement, staging.path]
         try task.run()
 
-        NSApp.terminate(nil)
+        QuitConfirmation.quitNow()
     }
 
     // MARK: - Helpers

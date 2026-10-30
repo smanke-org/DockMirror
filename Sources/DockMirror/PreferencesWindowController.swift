@@ -38,10 +38,30 @@ private struct PreferencesView: View {
     @State private var showInDock = AppPresence.showInDock
     @State private var showInMenuBar = AppPresence.showInMenuBar
     @State private var launchAtLogin = LaunchAtLoginController.isEnabled
+    @State private var confirmQuit = QuitSettings.confirmQuit
     @ObservedObject private var hub = MenuHub.shared
 
     var body: some View {
         Form {
+            Section {
+                Toggle("Launch at Login", isOn: $launchAtLogin)
+                Toggle("Ask before quitting", isOn: $confirmQuit)
+                    .help("Quitting DockMirror asks first, so a stray ⌘Q doesn't stop the Dock syncing.")
+                Toggle("Show in Dock", isOn: $showInDock)
+                    .help("Adds a Dock icon whose right-click menu opens these settings.")
+                Toggle("Show in menu bar", isOn: $showInMenuBar)
+                Toggle("Put in ToolHUD’s menu while ToolHUD is running", isOn: $hub.foldIntoToolHUD)
+                    .help("ToolHUD shows this menu as a submenu of its own, and DockMirror’s icon leaves the menu bar until ToolHUD quits.")
+                if !showInDock && !showInMenuBar {
+                    Text(AppPresence.hiddenEverywhereNote(appName: "DockMirror", settingsName: "Settings"))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            } header: {
+                Text("General")
+            }
+
             AppearanceSection(appName: "DockMirror")
             Section {
                 Picker("Check other Macs", selection: $interval) {
@@ -55,23 +75,6 @@ private struct PreferencesView: View {
                     .fixedSize(horizontal: false, vertical: true)
             } header: {
                 Text("Sync")
-            }
-
-            Section {
-                Toggle("Show in Dock", isOn: $showInDock)
-                    .help("Adds a Dock icon whose right-click menu opens these settings.")
-                Toggle("Show in menu bar", isOn: $showInMenuBar)
-                Toggle("Put in ToolHUD’s menu while ToolHUD is running", isOn: $hub.foldIntoToolHUD)
-                    .help("ToolHUD shows this menu as a submenu of its own, and DockMirror’s icon leaves the menu bar until ToolHUD quits.")
-                if !showInDock && !showInMenuBar {
-                    Text(AppPresence.hiddenEverywhereNote(appName: "DockMirror", settingsName: "Settings"))
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-                Toggle("Launch at Login", isOn: $launchAtLogin)
-            } header: {
-                Text("General")
             }
 
             SyncUpdateSections()
@@ -95,6 +98,7 @@ private struct PreferencesView: View {
             AppPresence.applyDock(keepInFront: PreferencesWindowController.shared.visibleWindow)
         }
         .onChange(of: showInMenuBar) { AppPresence.showInMenuBar = $0 }
+        .onChange(of: confirmQuit) { QuitSettings.confirmQuit = $0 }
         .onChange(of: launchAtLogin) { enabled in
             if !LaunchAtLoginController.setEnabled(enabled) {
                 launchAtLogin = LaunchAtLoginController.isEnabled
