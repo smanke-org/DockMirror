@@ -7,6 +7,8 @@ it on the other, or you reorder things here but not there. Your muscle memory st
 whenever you switch machines. DockMirror is a menu bar app that syncs the pinned apps in your
 Dock through iCloud Drive. Add, remove or move an app on any Mac, and the others follow.
 
+<p align="center"><img src="docs/images/dockmirror-setup.webp" width="480" alt="DockMirror Setup window with a choice between main Mac and secondary Mac, two other Macs found, and a preview of the Dock after syncing with an added app marked"></p>
+
 ---
 
 ## ⬇️ Download
@@ -27,6 +29,27 @@ Every Mac must be signed in to the same Apple Account with iCloud Drive turned o
 Requires macOS 13 or later. Signed with Developer ID and notarized by Apple.
 
 ---
+
+## Features
+
+- **One Dock on every Mac**: Add, remove or move a pinned app on any Mac, and your other Macs follow, through iCloud Drive.
+- **Main and secondary Macs**: The main Mac's Dock is the starting layout; the others adopt it. Setup previews the result, and nothing changes until you click Start Syncing.
+- **Only shared apps**: Only apps installed on every Mac are synced. Apps on just one Mac, spacers, folders, Recents and Dock settings stay as they are.
+- **Backed up before every change**: The last 50 Dock backups are kept, and Restore Dock in the menu puts any of them back.
+- **Big removals wait for you**: If 5 or more apps, or half of the synced apps, disappear at once, DockMirror asks before spreading the change.
+- **Sync on your schedule**: Check other Macs every minute up to hourly, or only when you click Sync Now (⌘S). Pause Syncing stops this Mac until you resume.
+- **Macs menu**: See every Mac in the sync and when each last synced, and forget a Mac you no longer use.
+- **Settings sync**: How often to check, where DockMirror appears and the update choice can follow you to every Mac on the same iCloud account.
+- **URLs** for ToolHUD, Shortcuts or scripts: `dockmirror://sync`, `dockmirror://pause` and `dockmirror://setup`.
+- **Dock, menu bar, both or neither**, plus Launch at Login and updates from GitHub that ask first or install automatically.
+
+## Screenshots
+
+<table>
+<tr>
+<td width="50%" align="center"><img src="docs/images/dockmirror-settings.webp" width="320" alt="DockMirror Settings with how often to check other Macs, Show in Dock, Show in menu bar, Launch at Login, iCloud settings sync and the update choice"><br><sub><b>Settings.</b> How often to check other Macs, where DockMirror appears, settings sync and updates.</sub></td>
+</tr>
+</table>
 
 ## What gets synced
 
