@@ -9,13 +9,15 @@ private struct SimMac {
     var installed: Set<String>
     var state: LocalState
     var lastHold: SyncHold?
+    /// The apps it looked for on its last pass, as the app reports them.
+    var checked: Set<String> = []
 
     var apps: [String] { dock.filter { $0 != "|" } }
 
     func record(at now: Date) -> DeviceRecord {
         DeviceRecord(deviceID: id, deviceName: id, appVersion: "test", updatedAt: now,
-                     role: state.role, paused: state.paused, installed: installed.sorted(),
-                     dock: apps, entries: state.entries)
+                     role: state.role, paused: state.paused, installed: installed.intersection(checked).sorted(),
+                     dock: apps, entries: state.entries, checked: checked.sorted())
     }
 }
 
@@ -37,7 +39,11 @@ private final class Fleet {
         var mac = self[id]
         let remotes = macs.filter { $0.id != id }.map { $0.record(at: clock) }
         let slots = mac.dock.map { DockSlot(bundleID: $0 == "|" ? nil : $0) }
-        let input = CycleInput(dock: slots, labels: [:], installed: mac.installed, remotes: remotes,
+        // Like SyncCoordinator, look only for apps some Mac knows about.
+        var candidates = Set(mac.apps).union(mac.state.entries.keys)
+        for remote in remotes { candidates.formUnion(remote.entries.keys); candidates.formUnion(remote.dock) }
+        mac.checked = candidates
+        let input = CycleInput(dock: slots, labels: [:], installed: mac.installed.intersection(candidates), remotes: remotes,
                                now: clock, device: id, staleAfter: staleAfter, allowLargeRemoval: allowLarge)
         let result = SyncEngine.runCycle(state: mac.state, input: input)
         mac.state = result.state
@@ -206,6 +212,77 @@ final class MultiMacTests: XCTestCase {
         let eligible = SyncEngine.eligible(localInstalled: ["Safari", "Xcode"],
                                            remotes: [old], now: fleet.clock, staleAfter: fleet.staleAfter)
         XCTAssertEqual(eligible, ["Safari", "Xcode"])
+    }
+
+    /// C is asleep from here on, so it never looks for apps pinned later.
+    private func fleetWithSleepingMac() -> Fleet {
+        let all: Set<String> = ["Safari", "Mail", "QuickTime", "Notes"]
+        let fleet = Fleet([
+            SimMac(id: "A", dock: ["Safari", "Mail"], installed: all, state: LocalState(role: .main)),
+            SimMac(id: "B", dock: [], installed: all, state: LocalState(role: .secondary)),
+            SimMac(id: "C", dock: [], installed: ["Safari", "Mail"], state: LocalState(role: .secondary)),
+        ])
+        fleet.settle()
+        return fleet
+    }
+
+    /// Syncs A and B only; C stays asleep with its old file.
+    private func settleAwake(_ fleet: Fleet) {
+        for _ in 0..<3 { fleet.sync("A"); fleet.sync("B") }
+    }
+
+    func testAppPinnedWhileAMacSleepsStillSyncs() {
+        let fleet = fleetWithSleepingMac()
+        fleet["A"].dock = ["Safari", "QuickTime", "Mail"]
+        settleAwake(fleet)
+        XCTAssertEqual(fleet["B"].dock, ["Safari", "QuickTime", "Mail"])
+    }
+
+    func testAppMissingFromAMacThatLookedIsNotSynced() {
+        let fleet = fleetWithSleepingMac()
+        fleet["A"].dock = ["Safari", "QuickTime", "Mail"]
+        settleAwake(fleet)
+        // C wakes without QuickTime: B keeps its tile, but QuickTime is no longer synced.
+        fleet.settle()
+        XCTAssertEqual(fleet["B"].dock, ["Safari", "QuickTime", "Mail"])
+        XCTAssertFalse(fleet["C"].dock.contains("QuickTime"))
+        let eligible = SyncEngine.eligible(localInstalled: fleet["B"].installed,
+                                           remotes: [fleet["C"].record(at: fleet.clock)],
+                                           now: fleet.clock, staleAfter: fleet.staleAfter)
+        XCTAssertFalse(eligible.contains("QuickTime"))
+    }
+
+    func testAppsAddedSideBySideKeepTheirOrder() {
+        let fleet = fleetWithSleepingMac()
+        // C is awake and lacks both, so neither is synced while they're added
+        // on B, one at a time, each after the last. A doesn't get the tiles, so
+        // the main Mac's repair of tied keys can't step in.
+        fleet["B"].dock = ["Safari", "QuickTime", "Mail"]
+        fleet.settle()
+        fleet["B"].dock = ["Safari", "QuickTime", "Notes", "Mail"]
+        fleet.settle()
+        XCTAssertNotEqual(fleet["B"].state.entries["Notes"]?.key, fleet["B"].state.entries["QuickTime"]?.key)
+        // C gets both; A and C follow B's order, not alphabetical.
+        fleet["C"].installed.formUnion(["Notes", "QuickTime"])
+        fleet.settle()
+        XCTAssertEqual(fleet["A"].dock, ["Safari", "QuickTime", "Notes", "Mail"])
+        XCTAssertEqual(fleet["C"].dock, ["Safari", "QuickTime", "Notes", "Mail"])
+    }
+
+    func testMainSeparatesKeysTiedBeforeTheFix() {
+        let fleet = fleetWithSleepingMac()
+        fleet["A"].dock = ["Safari", "QuickTime", "Notes", "Mail"]
+        settleAwake(fleet)
+        // Give both the same key, as 1.1.4 could.
+        for id in ["A", "B"] {
+            let key = fleet[id].state.entries["Notes"]!.key
+            fleet[id].state.entries["QuickTime"]!.key = key
+        }
+        fleet["B"].dock = ["Safari", "Mail"]
+        fleet["B"].state.lastObserved = nil
+        settleAwake(fleet)
+        XCTAssertEqual(fleet["A"].dock, ["Safari", "QuickTime", "Notes", "Mail"])
+        XCTAssertEqual(fleet["B"].dock, ["Safari", "QuickTime", "Notes", "Mail"])
     }
 
     // MARK: - Local-only content

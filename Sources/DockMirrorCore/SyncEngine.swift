@@ -31,14 +31,17 @@ public enum SyncEngine {
 
     // MARK: - Which apps are synced
 
-    /// Apps installed on this Mac and on every other Mac that has joined and
-    /// been seen within `staleAfter`. A Mac that has gone quiet stops narrowing
-    /// the set, so a sold or retired Mac can't freeze everyone's Dock.
+    /// Apps installed on this Mac and not missing from any other Mac that has
+    /// joined and been seen within `staleAfter`. A Mac that has gone quiet
+    /// stops narrowing the set, so a sold or retired Mac can't freeze everyone's
+    /// Dock. Only apps a Mac looked for and didn't find count as missing: an
+    /// app pinned while a Mac was asleep syncs now, and stops if that Mac
+    /// wakes without it.
     public static func eligible(localInstalled: Set<String>, remotes: [DeviceRecord],
                                 now: Date, staleAfter: TimeInterval) -> Set<String> {
         var result = localInstalled
         for remote in remotes where remote.role != nil && now.timeIntervalSince(remote.updatedAt) <= staleAfter {
-            result.formIntersection(remote.installed)
+            result.subtract(remote.missing)
         }
         return result
     }
@@ -102,12 +105,13 @@ public enum SyncEngine {
         }
         guard !change.isEmpty else { return change }
 
-        // Apps whose keys can be trusted as fixed points: untouched, synced, and
-        // in key order. Anything else this Mac has shows in an order that can
-        // disagree with the keys (local-only apps aren't arranged by sync), so
-        // only the longest run that is still ascending is used.
+        // Apps whose keys can be trusted as fixed points: untouched, pinned, and
+        // in key order. Apps that aren't synced yet count too — skipping them let
+        // several apps added side by side get the same key, so their order was
+        // lost. Their places here can disagree with their keys (they aren't
+        // arranged by sync), so only the longest run that is still ascending is used.
         let candidates = new.filter { id in
-            stable.contains(id) && eligible.contains(id) && entries[id]?.pinned == true
+            stable.contains(id) && entries[id]?.pinned == true
         }
         let anchors = Set(longestIncreasingRun(candidates) { entries[$0]!.key })
 
@@ -132,6 +136,32 @@ public enum SyncEngine {
                                     updatedAt: now, by: device, label: existing?.label ?? labels[id])
         }
         return change
+    }
+
+    /// Gives pinned apps that share a key distinct keys, in this Dock's order.
+    ///
+    /// Apps sharing a key fall back to bundle-ID order, which is nobody's
+    /// arrangement. Before 1.1.5, apps added side by side while they weren't
+    /// synced yet could all get the same key. Run on the main Mac only, so two
+    /// Macs never re-key the same apps in different orders.
+    @discardableResult
+    public static func separateTiedKeys(dock: [String], entries: inout EntryMap,
+                                        now: Date, device: String) -> [String] {
+        let pinnedInDock = uniqued(dock).filter { entries[$0]?.pinned == true }
+        let byKey = Dictionary(grouping: pinnedInDock) { entries[$0]!.key }
+        var rekeyed: [String] = []
+        for (key, ids) in byKey where ids.count > 1 {
+            // The first keeps the key; the rest go after it, before the next
+            // key in use, so no other app's place changes.
+            let hi = entries.values.filter { $0.pinned && $0.key > key }.map(\.key).min()
+            var lo = key
+            for id in ids.dropFirst() {
+                lo = FractionalIndex.between(lo, hi)
+                entries[id] = DockEntry(pinned: true, key: lo, updatedAt: now, by: device, label: entries[id]!.label)
+                rekeyed.append(id)
+            }
+        }
+        return rekeyed
     }
 
     // MARK: - Planning this Mac's Dock

@@ -101,6 +101,9 @@ extension SyncEngine {
             seedFromMain(dock: apps, entries: &state.entries, installedLocally: installedLocally,
                          labels: input.labels, now: input.now, device: input.device)
         }
+        if role == .main {
+            separateTiedKeys(dock: apps, entries: &state.entries, now: input.now, device: input.device)
+        }
         // From here the user's edits are folded in, so this Dock is the baseline
         // even if the plan below is held.
         state.lastObserved = apps

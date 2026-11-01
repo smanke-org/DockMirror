@@ -37,7 +37,7 @@ Requires macOS 13 or later. Signed with Developer ID and notarized by Apple.
 - **Only shared apps**: Only apps installed on every Mac are synced. Apps on just one Mac, spacers, folders, Recents and Dock settings stay as they are.
 - **Backed up before every change**: The last 50 Dock backups are kept, and Restore Dock in the menu puts any of them back.
 - **Big removals wait for you**: If 5 or more apps, or half of the synced apps, disappear at once, DockMirror asks before spreading the change.
-- **Sync on your schedule**: Check other Macs every minute up to hourly, or only when you click Sync Now (⌘S). Pause Syncing stops this Mac until you resume.
+- **Sync within seconds**: Other Macs' changes are picked up as soon as iCloud Drive delivers them, with a check every 30 seconds up to hourly as a backstop, or only when you click Sync Now (⌘S). Pause Syncing stops this Mac until you resume.
 - **Macs menu**: See every Mac in the sync and when each last synced, and forget a Mac you no longer use.
 - **Settings sync**: How often to check, where DockMirror appears and the update choice can follow you to every Mac on the same iCloud account.
 - **URLs** for ToolHUD, Shortcuts or scripts: `dockmirror://sync`, `dockmirror://pause` and `dockmirror://setup`.
@@ -78,10 +78,11 @@ Requires macOS 13 or later. Signed with Developer ID and notarized by Apple.
 
 Open **Settings…** from the menu bar menu (or ⌘,):
 
-- **Check other Macs:** every minute (the default), 5, 15 or 30 minutes,
-  hourly, or only when you click Sync Now. Edits to this Dock are still
-  shared right away. A longer interval only means other Macs' edits arrive
-  later, with less background work.
+- **Check other Macs:** every 30 seconds (the default), every minute, 5, 15
+  or 30 minutes, hourly, or only when you click Sync Now. Edits to this Dock
+  are shared right away, and other Macs' edits are picked up within seconds
+  of iCloud Drive delivering them. The interval is a backstop for when
+  iCloud is slow to report a change.
 - **Show in Dock** (off by default) and **Show in menu bar** (on), in any
   combination. Right-clicking the Dock icon offers **Settings…**. With
   both off, DockMirror keeps syncing with no icon; open it again from

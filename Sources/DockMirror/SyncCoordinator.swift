@@ -116,6 +116,27 @@ final class SyncCoordinator {
         }
     }
 
+    private func filesChanged(_ paths: [String]) {
+        if paths.contains(where: { $0.hasSuffix("/com.apple.dock.plist") }) {
+            dockPreferencesChanged()
+        }
+        // Another Mac's file arriving from iCloud (or its placeholder, while
+        // evicted). This Mac's own writes are left out, or every publish would
+        // set off another pass.
+        guard let shared = SyncFolder.url()?.resolvingSymlinksInPath().path else { return }
+        let own = DeviceIdentity.deviceID + ".json"
+        let remoteChanged = paths.contains { path in
+            let url = URL(fileURLWithPath: path)
+            guard url.deletingLastPathComponent().resolvingSymlinksInPath().path == shared else { return false }
+            let name = url.lastPathComponent
+            let isRecord = name.hasSuffix(".json") || name.hasSuffix(".json.icloud")
+            return isRecord && name != own && name != ".\(own).icloud"
+        }
+        if remoteChanged, SyncSettings.checkInterval != .manual {
+            scheduleSync(after: 2)
+        }
+    }
+
     private func syncIfPinnedAppsChanged() {
         guard state.role != nil, !state.paused else { return }
         let apps = DockPreferences.read().slots.compactMap(\.bundleID)
@@ -138,22 +159,29 @@ final class SyncCoordinator {
         }
     }
 
+    /// Watches the Dock's preferences for edits here, and the shared folder
+    /// for other Macs' files, so both are synced within seconds rather than
+    /// waiting for the timer.
     private func watchDockPreferences() {
-        let folder = DockPreferences.plistURL.deletingLastPathComponent().path as CFString
+        var folders = [DockPreferences.plistURL.deletingLastPathComponent().path]
+        if let shared = SyncFolder.url() {
+            // FSEvents only reports on a folder that exists when watching starts.
+            try? FileManager.default.createDirectory(at: shared, withIntermediateDirectories: true)
+            folders.append(shared.path)
+        }
         var context = FSEventStreamContext(version: 0, info: Unmanaged.passUnretained(self).toOpaque(),
                                            retain: nil, release: nil, copyDescription: nil)
         let callback: FSEventStreamCallback = { _, info, count, paths, _, _ in
             guard let info else { return }
-            let names = unsafeBitCast(paths, to: NSArray.self) as? [String] ?? []
-            guard names.prefix(count).contains(where: { $0.hasSuffix("/com.apple.dock.plist") }) else { return }
+            let names = Array((unsafeBitCast(paths, to: NSArray.self) as? [String] ?? []).prefix(count))
             let coordinator = Unmanaged<SyncCoordinator>.fromOpaque(info).takeUnretainedValue()
-            Task { @MainActor in coordinator.dockPreferencesChanged() }
+            Task { @MainActor in coordinator.filesChanged(names) }
         }
         // UseCFTypes makes `paths` a CFArray of strings; without it they arrive
         // as a C array, and bridging that to NSArray crashes.
         let flags = UInt32(kFSEventStreamCreateFlagFileEvents | kFSEventStreamCreateFlagNoDefer
                            | kFSEventStreamCreateFlagUseCFTypes)
-        guard let stream = FSEventStreamCreate(nil, callback, &context, [folder] as CFArray,
+        guard let stream = FSEventStreamCreate(nil, callback, &context, folders as CFArray,
                                                FSEventStreamEventId(kFSEventStreamEventIdSinceNow), 0.5, flags) else {
             NSLog("DockMirror: couldn't watch the Dock preferences; relying on the timer")
             return
@@ -281,7 +309,8 @@ final class SyncCoordinator {
         passCount += 1
         let snapshot = DockPreferences.read()
         trackInsertFailures(in: snapshot)
-        let installed = InstalledApps.installed(among: candidates(snapshot: snapshot))
+        let checked = candidates(snapshot: snapshot)
+        let installed = InstalledApps.installed(among: checked)
             .filter { (insertFailures[$0] ?? 0) < 2 }
         lastInputs = (snapshot, installed)
 
@@ -322,7 +351,7 @@ final class SyncCoordinator {
         lastResult = result
         lastSync = Date()
         save()
-        publish(folder: folder, installed: installed, dock: dockApps)
+        publish(folder: folder, installed: installed, checked: checked, dock: dockApps)
         recordDiagnostics()
         NotificationCenter.default.post(name: Self.didUpdateNotification, object: self)
     }
@@ -365,12 +394,12 @@ final class SyncCoordinator {
 
     // MARK: - Publishing
 
-    private func publish(folder: URL?, installed: Set<String>, dock: [String]) {
+    private func publish(folder: URL?, installed: Set<String>, checked: Set<String>, dock: [String]) {
         guard let folder else { return }
         let record = DeviceRecord(deviceID: DeviceIdentity.deviceID, deviceName: DeviceIdentity.deviceName,
                                   appVersion: AppInfo.version, updatedAt: Date(), role: state.role,
                                   paused: state.paused, installed: installed.sorted(), dock: dock,
-                                  entries: state.entries)
+                                  entries: state.entries, checked: checked.sorted())
         // Unchanged files are still rewritten hourly, so other Macs see this
         // one as alive and keep counting it.
         let fresh = lastPublishedAt.map { Date().timeIntervalSince($0) < 3600 } ?? false

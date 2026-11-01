@@ -71,9 +71,13 @@ public struct DeviceRecord: Codable, Equatable, Sendable {
     /// This Mac's merged view of every Mac's entries, so a change keeps
     /// spreading even after the Mac that made it goes to sleep.
     public var entries: EntryMap
+    /// Every app this Mac looked for on its last pass, found or not. nil in
+    /// files from 1.1.4 and earlier.
+    public var checked: [String]?
 
     public init(deviceID: String, deviceName: String, appVersion: String, updatedAt: Date,
-                role: MacRole?, paused: Bool, installed: [String], dock: [String], entries: EntryMap) {
+                role: MacRole?, paused: Bool, installed: [String], dock: [String], entries: EntryMap,
+                checked: [String]? = nil) {
         self.deviceID = deviceID
         self.deviceName = deviceName
         self.appVersion = appVersion
@@ -83,6 +87,16 @@ public struct DeviceRecord: Codable, Equatable, Sendable {
         self.installed = installed
         self.dock = dock
         self.entries = entries
+        self.checked = checked
+    }
+
+    /// Apps this Mac looked for and didn't find. An app pinned elsewhere since
+    /// this Mac's last pass isn't among them: it hasn't been looked for, so it
+    /// can't be ruled out. Older files don't say what was looked for, but every
+    /// app in their entries or Dock was.
+    public var missing: Set<String> {
+        let looked = checked.map(Set.init) ?? Set(entries.keys).union(dock).union(installed)
+        return looked.subtracting(installed)
     }
 
     /// Everything except the timestamp, to tell whether anything changed.
