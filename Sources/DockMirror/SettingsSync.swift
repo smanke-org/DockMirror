@@ -45,7 +45,7 @@ final class SettingsSync: ObservableObject {
     /// registered default. Uploading these too means a Mac adopting the file never mistakes
     /// "at its default" for "missing".
     private static let fallbacks: [String: Any] = [
-        "showInDock": false, "showInMenuBar": true, MenuHub.foldKey: true, AppAppearance.key: AppAppearance.system.rawValue, "sync.checkInterval": 60,
+        "showInDock": false, "showInMenuBar": true, MenuHub.foldKey: true, AppAppearance.key: AppAppearance.system.rawValue, "sync.checkInterval": 30,
         QuitSettings.key: true,
     ]
 

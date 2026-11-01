@@ -7,6 +7,7 @@ import Foundation
 /// only means other Macs' edits arrive here later, in exchange for less
 /// reading of iCloud Drive and fewer wake-ups.
 enum SyncInterval: Int, CaseIterable {
+    case every30Seconds = 30
     case everyMinute = 60
     case every5Minutes = 300
     case every15Minutes = 900
@@ -17,6 +18,7 @@ enum SyncInterval: Int, CaseIterable {
 
     var title: String {
         switch self {
+        case .every30Seconds: return "Every 30 Seconds"
         case .everyMinute: return "Every Minute"
         case .every5Minutes: return "Every 5 Minutes"
         case .every15Minutes: return "Every 15 Minutes"
@@ -32,11 +34,12 @@ enum SyncInterval: Int, CaseIterable {
 enum SyncSettings {
     private static let key = "sync.checkInterval"
 
-    /// Every minute unless changed, which is how 1.0.0 behaved.
+    /// Every 30 seconds unless changed. Other Macs' files are also watched, so
+    /// this is a backstop for when iCloud is slow to report a change.
     static var checkInterval: SyncInterval {
         get {
-            guard let raw = UserDefaults.standard.object(forKey: key) as? Int else { return .everyMinute }
-            return SyncInterval(rawValue: raw) ?? .everyMinute
+            guard let raw = UserDefaults.standard.object(forKey: key) as? Int else { return .every30Seconds }
+            return SyncInterval(rawValue: raw) ?? .every30Seconds
         }
         set { UserDefaults.standard.set(newValue.rawValue, forKey: key) }
     }
