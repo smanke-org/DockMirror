@@ -59,6 +59,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             DebugQuitTest.run(how)
             return
         }
+        // The update prompt, What's New and Settings drawn to PNGs; starts nothing else.
+        if let folder = ProcessInfo.processInfo.environment["DOCKMIRROR_DEBUG_UPDATE_NOTES"] {
+            DebugUpdateNotes.run(folder: folder)
+            return
+        }
         #endif
         SyncCoordinator.shared.start()
 
@@ -73,7 +78,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         SettingsSync.shared.onApply = { SyncCoordinator.shared.setCheckInterval(SyncSettings.checkInterval) }
         if newInstall { SettingsSync.shared.adoptOnNewInstall() }
         SettingsSync.shared.start()
-        AutoUpdater.shared.start()
+        AutoUpdater.shared.start(newInstall: newInstall)
     }
 
     /// Quitting asks first, while "Ask before quitting" is on in Settings › General. Not when
