@@ -47,7 +47,8 @@ Requires macOS 13 or later. Signed with Developer ID and notarized by Apple.
 
 <table>
 <tr>
-<td width="50%" align="center"><img src="docs/images/dockmirror-settings.webp" width="320" alt="DockMirror Settings with how often to check other Macs, Show in Dock, Show in menu bar, Launch at Login, iCloud settings sync and the update choice"><br><sub><b>Settings.</b> How often to check other Macs, where DockMirror appears, settings sync and updates.</sub></td>
+<td width="50%" align="center"><img src="docs/images/dockmirror-menu.webp" width="420" alt="The DockMirror menu showing when it last synced and how many apps are synced across 3 Macs, with the Macs submenu listing this Mac as main and two secondary Macs with when each was last seen"><br><sub><b>The menu.</b> Sync now, pause, and every Mac in the sync with when it was last seen.</sub></td>
+<td width="50%" align="center"><img src="docs/images/dockmirror-settings.webp" width="320" alt="DockMirror Settings with Launch at Login, asking before quitting, Show in Dock, Show in menu bar, appearance, how often to check other Macs, iCloud settings sync and the update choice"><br><sub><b>Settings.</b> How often to check other Macs, where DockMirror appears, settings sync and updates.</sub></td>
 </tr>
 </table>
 
