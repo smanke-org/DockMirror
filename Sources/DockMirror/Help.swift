@@ -51,7 +51,8 @@ enum Help {
         ]),
 
         HelpTopic(id: "syncing", title: "How Syncing Works", symbol: "arrow.triangle.2.circlepath", blocks: [
-            .text("Each Mac writes its Dock layout to a DockMirror folder in iCloud Drive and checks the other Macs' layouts regularly (set how often in Settings › Sync). Edits on any Mac sync both ways; if two Macs change the same app, the newest change wins."),
+            .text("Each Mac writes its Dock layout to a DockMirror folder in iCloud Drive and picks up the other Macs' changes a few seconds after iCloud Drive delivers them, with a regular check as a backstop (set how often in Settings › Sync). Edits on any Mac sync both ways; if two Macs change the same app, the newest change wins."),
+            .text("Apps keep their order on every Mac, even several pinned side by side at once. A Mac that was asleep when an app was pinned doesn't hold it back from syncing."),
             .keys([
                 ("Sync Now (⌘S)", "Check the other Macs right away (menu bar menu)"),
                 ("Pause Syncing", "Stop syncing this Mac until you resume"),

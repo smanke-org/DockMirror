@@ -57,6 +57,8 @@ Requires macOS 13 or later. Signed with Developer ID and notarized by Apple.
 - Only apps installed on **every** Mac are synced. Apps that are only on one Mac stay where
   they are on that Mac.
 - Changes sync both ways: add, remove or move an app on any Mac, and the others follow.
+- Apps keep their order on every Mac, even several pinned side by side at once. A Mac that
+  was asleep when an app was pinned doesn't hold it back from syncing.
 - Recents, folders and stacks on the right side, spacers, and Dock settings are never touched.
 
 ## Safety
@@ -128,8 +130,9 @@ developer and notarized by Apple. It is installed in place, so your settings car
 - **Detecting changes.** The Dock rewrites its preferences file for many
   reasons, Recents included. After three quiet seconds, so a drag in progress
   is never synced half-way, DockMirror compares just the pinned apps and does
-  a full sync only if they changed. Other Macs' files are checked at the
-  chosen interval and on wake. A file that hasn't changed is never re-read,
+  a full sync only if they changed. Other Macs' files are watched, so their
+  changes sync about two seconds after they arrive, and are also checked at
+  the chosen interval and on wake. A file that hasn't changed is never re-read,
   and app-location lookups are cached for 10 minutes.
 
 ## Building
