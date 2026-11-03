@@ -1,6 +1,12 @@
 import Foundation
 
 enum AppInfo {
+    /// The About window: the version and the last 10 releases' notes.
+    @MainActor
+    static func showAbout() {
+        AboutWindow.shared.show()
+    }
+
     static let displayName = "DockMirror"
     static let shortName = "DockMirror"
     static let bundleIdentifier = "com.smanke.DockMirror"
