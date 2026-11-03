@@ -183,7 +183,10 @@ enum AgentCommands {
                 // Settings are the installed app's own: a test copy shares them.
                 if AgentSocket.isTestRun { throw AgentError.invalid("a test copy doesn't open Settings, which it shares with the installed app") }
                 PreferencesWindowController.shared.show()
-            case "help": HelpWindow.shared.show()
+            case "help":
+                // The Help window saves its frame in the installed app's settings.
+                if AgentSocket.isTestRun { throw AgentError.invalid("a test copy doesn't open Help, which saves its window size in the installed app's settings") }
+                HelpWindow.shared.show()
             default: throw AgentError.usage("the page must be setup, settings or help")
             }
             return ["open": try args.required("page").lowercased()]
