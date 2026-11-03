@@ -38,9 +38,9 @@ enum SyncSettings {
     /// this is a backstop for when iCloud is slow to report a change.
     static var checkInterval: SyncInterval {
         get {
-            guard let raw = UserDefaults.standard.object(forKey: key) as? Int else { return .every30Seconds }
+            guard let raw = AppDefaults.store.object(forKey: key) as? Int else { return .every30Seconds }
             return SyncInterval(rawValue: raw) ?? .every30Seconds
         }
-        set { UserDefaults.standard.set(newValue.rawValue, forKey: key) }
+        set { AppDefaults.store.set(newValue.rawValue, forKey: key) }
     }
 }

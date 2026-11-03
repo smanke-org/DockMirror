@@ -81,6 +81,15 @@ enum Help {
                 ("dockmirror://setup", "Open setup"),
             ]),
             .text("Use these links from Shortcuts, scripts or a launcher. ToolHUD's DockMirror buttons use them."),
+            .heading("Command line and AI agents"),
+            .text("DockMirror is also a command line tool, so scripts and AI agents such as Claude Code or Codex can check the sync, list this Dock, the other Macs and the backups, sync now, pause and resume, and answer a held big removal. Commands run in the open app, through the same code as the menu. Anything that rewrites the Dock or forgets a Mac only shows what it would do until --yes is added."),
+            .keys([
+                ("dockmirror help", "List every command and its options"),
+                ("dockmirror status", "Role, last sync, synced apps and anything waiting for an answer"),
+                ("dockmirror dock list", "This Dock's apps in order, and which ones sync"),
+                ("dockmirror mcp", "Offer the same commands to MCP apps, such as Claude Desktop"),
+            ]),
+            .text("To type dockmirror in Terminal, link it once: ln -s /Applications/DockMirror.app/Contents/MacOS/DockMirror ~/.local/bin/dockmirror (with ~/.local/bin on your PATH). MCP apps take the full path to that program, followed by mcp."),
         ]),
 
         HelpTopic(id: "updates", title: "Updates", symbol: "arrow.down.circle", blocks: [

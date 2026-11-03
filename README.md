@@ -100,6 +100,31 @@ Open **Settings…** from the menu bar menu (or ⌘,):
 For ToolHUD, Shortcuts or scripts, `dockmirror://sync` syncs now, `dockmirror://pause` pauses or
 resumes syncing, and `dockmirror://setup` opens Setup & Preview.
 
+### Command line and AI agents
+
+DockMirror is also a command line tool, so scripts and AI agents (Claude Code, Codex) can check the sync, list this
+Dock, the other Macs and the Dock backups, sync now, pause and resume, set up or stop syncing, and answer a held big
+removal. Commands run in the open app, through the same code as the menu bar menu. Link it once to type `dockmirror`:
+
+```bash
+ln -s /Applications/DockMirror.app/Contents/MacOS/DockMirror ~/.local/bin/dockmirror
+```
+
+```bash
+dockmirror help
+dockmirror status --json
+dockmirror dock list
+dockmirror sync now
+```
+
+Every command takes `--json`. Starting setup, applying a big removal, restoring a backup and forgetting a Mac only
+show what they would do until you add `--yes`. For MCP apps such as Claude Desktop, the same commands are served by
+`/Applications/DockMirror.app/Contents/MacOS/DockMirror mcp`:
+
+```bash
+claude mcp add --scope user dockmirror -- /Applications/DockMirror.app/Contents/MacOS/DockMirror mcp
+```
+
 ## Updates
 
 DockMirror checks GitHub for a new release once a day, or as often as you choose in Settings (a number of hours, days, weeks or months).
@@ -147,6 +172,10 @@ instead of iCloud Drive. A debug build shares this Mac's device ID, so always
 set this when testing. `DOCKMIRROR_DRY_RUN=1` plans and publishes but never
 writes the Dock. `defaults read com.smanke.DockMirror diagnostics` shows the
 role, the synced order, and the last error or hold.
+
+To try the `dockmirror` command line on test data, run a debug build with `APP_STORE=/tmp/dockmirror-test` in front.
+That starts a test copy with its own sync folder, backups and settings, which never writes the Dock and starts no
+watching, timers, menu bar item or updater. Release builds ignore `APP_STORE`.
 
 ## Releasing
 

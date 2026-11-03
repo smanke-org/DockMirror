@@ -32,9 +32,9 @@ enum DeviceIdentity {
     /// Only reached if IOKit won't give up the hardware UUID.
     private static func fallbackUUID() -> String {
         let key = "sync.fallbackDeviceUUID"
-        if let existing = UserDefaults.standard.string(forKey: key) { return existing }
+        if let existing = AppDefaults.store.string(forKey: key) { return existing }
         let created = UUID().uuidString
-        UserDefaults.standard.set(created, forKey: key)
+        AppDefaults.store.set(created, forKey: key)
         return created
     }
 }

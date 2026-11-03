@@ -26,6 +26,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var statusMenu: StatusMenuController?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        #if DEBUG
+        // A test run of the agent CLI (APP_STORE): its own sync folder, backups and settings,
+        // and the agent socket. It never writes the Dock (every pass is a dry run), and nothing
+        // else starts: no Dock or folder watching, timers, menu bar item, ToolHUD menu,
+        // settings sync or updater. Passes run only when a command asks for one.
+        if AgentSocket.isTestRun {
+            _ = SyncCoordinator.shared
+            AgentSocket.listen { await AgentRouter.handle($0) }
+            return
+        }
+        #endif
         // Before anything saves a setting: an empty domain means a brand-new install.
         let newInstall = SettingsSync.domainIsEmpty()
         UpdateSettings.registerDefaults()
@@ -66,6 +77,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         #endif
         SyncCoordinator.shared.start()
+        // `dockmirror` and the MCP server talk to the app through this.
+        AgentSocket.listen { await AgentRouter.handle($0) }
 
         // DOCKMIRROR_SHOW_SETUP=1 opens setup at launch, for testing it without the menu.
         if SyncCoordinator.shared.state.role == nil

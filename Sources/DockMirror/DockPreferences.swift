@@ -99,6 +99,8 @@ enum DockPreferences {
     /// `expected` is the Dock the plan was made from. If it has changed since
     /// (the user is mid-drag, or just added something), nothing is written.
     static func write(_ tiles: [NSDictionary], expecting expected: Snapshot) throws {
+        // An agent CLI test copy never changes the real Dock (it is a dry run anyway).
+        guard !AgentSocket.isTestRun else { throw WriteError.didNotStick }
         guard read() == expected else { throw WriteError.changedUnderneath }
         CFPreferencesSetAppValue(appsKey, tiles as CFArray, domain)
         guard CFPreferencesAppSynchronize(domain) else { throw WriteError.didNotStick }
@@ -107,6 +109,7 @@ enum DockPreferences {
     }
 
     static func restartDock() {
+        guard !AgentSocket.isTestRun else { return }
         let task = Process()
         task.executableURL = URL(fileURLWithPath: "/usr/bin/killall")
         task.arguments = ["Dock"]
@@ -120,6 +123,7 @@ enum DockBackups {
     static let keep = 50
 
     static var folder: URL {
+        if let test = AppDefaults.testFolder { return test.appendingPathComponent("Backups", isDirectory: true) }
         let support = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
         return support.appendingPathComponent("DockMirror/Backups", isDirectory: true)
     }
@@ -163,6 +167,10 @@ enum DockBackups {
 
     /// Puts the whole Dock domain back as it was, then restarts the Dock.
     static func restore(_ backup: Backup) throws {
+        guard !AgentSocket.isTestRun else {
+            throw NSError(domain: "DockMirror.Backup", code: -1,
+                          userInfo: [NSLocalizedDescriptionKey: "A test copy never changes the Dock."])
+        }
         // The current state is backed up first, so a restore can be undone.
         try create()
         let status = run("/usr/bin/defaults", ["import", "com.apple.dock", backup.url.path])

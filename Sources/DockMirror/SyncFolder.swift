@@ -11,6 +11,8 @@ enum SyncFolder {
     /// `DOCKMIRROR_SYNC_FOLDER` redirects it, so a debug build — which shares
     /// this Mac's device ID — can be tested without touching the real file.
     static func url() -> URL? {
+        // An agent CLI test copy (Debug only) keeps its Macs' files in its own folder.
+        if let test = AppDefaults.testFolder { return test.appendingPathComponent("Devices", isDirectory: true) }
         if let override = ProcessInfo.processInfo.environment["DOCKMIRROR_SYNC_FOLDER"], !override.isEmpty {
             return URL(fileURLWithPath: override, isDirectory: true)
         }

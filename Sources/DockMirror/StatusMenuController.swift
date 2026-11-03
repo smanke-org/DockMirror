@@ -145,7 +145,7 @@ final class StatusMenuController: NSObject, NSMenuDelegate {
     }
 
     private func isActive(_ record: DeviceRecord) -> Bool {
-        record.role != nil && Date().timeIntervalSince(record.updatedAt) <= coordinator.staleAfter
+        coordinator.isCounted(record)
     }
 
     private func macsMenu() -> NSMenuItem {
@@ -269,8 +269,7 @@ final class StatusMenuController: NSObject, NSMenuDelegate {
                       "The whole Dock goes back to how it was then, including folders and settings. The current Dock is backed up first. Syncing is paused so the restored layout isn't immediately replaced; resume it from the menu to share it with your other Macs.",
                       action: "Restore") else { return }
         do {
-            coordinator.setPaused(true)
-            try DockBackups.restore(backup)
+            try coordinator.restore(backup)
         } catch {
             let alert = NSAlert()
             alert.messageText = "Restore failed"

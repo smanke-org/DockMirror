@@ -19,12 +19,13 @@ final class SyncCoordinator {
     /// A Mac not heard from in this long stops narrowing the synced apps.
     var staleAfter: TimeInterval { TimeInterval(staleDays) * 86_400 }
     var staleDays: Int {
-        get { max(1, UserDefaults.standard.object(forKey: Keys.staleDays) as? Int ?? 30) }
-        set { UserDefaults.standard.set(newValue, forKey: Keys.staleDays) }
+        get { max(1, AppDefaults.store.object(forKey: Keys.staleDays) as? Int ?? 30) }
+        set { AppDefaults.store.set(newValue, forKey: Keys.staleDays) }
     }
 
-    /// `DOCKMIRROR_DRY_RUN=1` plans and publishes but never writes the Dock.
-    private let dryRun = ProcessInfo.processInfo.environment["DOCKMIRROR_DRY_RUN"] == "1"
+    /// `DOCKMIRROR_DRY_RUN=1` plans and publishes but never writes the Dock. An agent CLI test
+    /// copy (Debug, APP_STORE) is always a dry run.
+    let dryRun = ProcessInfo.processInfo.environment["DOCKMIRROR_DRY_RUN"] == "1" || AgentSocket.isTestRun
 
     private var running = false
     /// A sync cycle is changing the Dock, or a large removal is waiting for confirmation.
@@ -54,13 +55,13 @@ final class SyncCoordinator {
     }
 
     private init() {
-        if let data = UserDefaults.standard.data(forKey: Keys.state),
+        if let data = AppDefaults.store.data(forKey: Keys.state),
            let saved = try? SyncFolder.decoder.decode(LocalState.self, from: data) {
             state = saved
         } else {
             state = LocalState()
         }
-        if let data = UserDefaults.standard.data(forKey: Keys.remoteCache),
+        if let data = AppDefaults.store.data(forKey: Keys.remoteCache),
            let cached = try? SyncFolder.decoder.decode([String: DeviceRecord].self, from: data) {
             remotes = cached
         }
@@ -244,6 +245,18 @@ final class SyncCoordinator {
         syncNow()
     }
 
+    /// Whether another Mac narrows the synced apps: it has joined and was seen recently.
+    func isCounted(_ record: DeviceRecord) -> Bool {
+        record.role != nil && Date().timeIntervalSince(record.updatedAt) <= staleAfter
+    }
+
+    /// Puts the whole Dock back from a backup. Syncing is paused first, so the restored
+    /// layout isn't immediately replaced.
+    func restore(_ backup: DockBackups.Backup) throws {
+        setPaused(true)
+        try DockBackups.restore(backup)
+    }
+
     func forget(deviceID: String) {
         guard let folder = SyncFolder.url() else { return }
         try? SyncFolder.remove(deviceID: deviceID, in: folder)
@@ -420,13 +433,13 @@ final class SyncCoordinator {
 
     private func save() {
         if let data = try? SyncFolder.encoder.encode(state) {
-            UserDefaults.standard.set(data, forKey: Keys.state)
+            AppDefaults.store.set(data, forKey: Keys.state)
         }
     }
 
     private func cacheRemotes() {
         if let data = try? SyncFolder.encoder.encode(remotes) {
-            UserDefaults.standard.set(data, forKey: Keys.remoteCache)
+            AppDefaults.store.set(data, forKey: Keys.remoteCache)
         }
     }
 
@@ -452,6 +465,6 @@ final class SyncCoordinator {
             info["syncedOrder"] = SyncEngine.managedOrder(entries: state.entries, eligible: result.eligible)
             info["hold"] = result.hold.map { "\($0)" } ?? ""
         }
-        UserDefaults.standard.set(info, forKey: Keys.diagnostics)
+        AppDefaults.store.set(info, forKey: Keys.diagnostics)
     }
 }
