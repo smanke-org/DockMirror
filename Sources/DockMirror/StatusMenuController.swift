@@ -67,13 +67,13 @@ final class StatusMenuController: NSObject, NSMenuDelegate {
         menu.addItem(.separator())
 
         if coordinator.state.role == nil {
-            menu.addItem(item("Set Up…", #selector(openSetup)))
+            menu.addItem(item("Set Up…", #selector(openSetup)).showIcon("dock.rectangle"))
         } else {
-            menu.addItem(item("Sync Now", #selector(syncNow), key: "s"))
+            menu.addItem(item("Sync Now", #selector(syncNow), key: "s").showIcon("arrow.triangle.2.circlepath"))
             let pause = item("Pause Syncing", #selector(togglePause))
             pause.state = coordinator.state.paused ? .on : .off
             menu.addItem(pause)
-            menu.addItem(item("Setup & Preview…", #selector(openSetup)))
+            menu.addItem(item("Setup & Preview…", #selector(openSetup)).showIcon("dock.rectangle"))
             menu.addItem(intervalMenu())
         }
         menu.addItem(macsMenu())
@@ -84,13 +84,13 @@ final class StatusMenuController: NSObject, NSMenuDelegate {
         helpEntry.target = self
         helpEntry.image = NSImage(systemSymbolName: "questionmark.circle", accessibilityDescription: nil)
         menu.addItem(helpEntry)
-        menu.addItem(item("Settings…", #selector(openPreferences), key: ","))
+        menu.addItem(item("Settings…", #selector(openPreferences), key: ",").showIcon("gearshape"))
         if let staged = AutoUpdater.shared.staged {
-            menu.addItem(item("Update to \(staged.version) Now", #selector(installStagedUpdate)))
+            menu.addItem(item("Update to \(staged.version) Now", #selector(installStagedUpdate)).showIcon("arrow.down.circle"))
         } else if let pending = UpdateAvailability.shared.pending {
-            menu.addItem(item("Update to \(pending)…", #selector(checkForUpdates)))
+            menu.addItem(item("Update to \(pending)…", #selector(checkForUpdates)).showIcon("arrow.down.circle"))
         } else {
-            menu.addItem(item("Check for Updates…", #selector(checkForUpdates)))
+            menu.addItem(item("Check for Updates…", #selector(checkForUpdates)).showIcon("arrow.down.circle"))
         }
         menu.addItem(item("About DockMirror", #selector(showAbout)))
         menu.addItem(item("Our other apps…", #selector(showOtherApps)))
